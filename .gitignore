@@ -16,8 +16,10 @@ env/
 
 # Node / frontend
 node_modules/
-frontend/dist/
 frontend/.vite/
+# NOTE: frontend/dist IS committed so Railway's Python-only image can serve the
+# SPA without needing Node at build/deploy time. Rebuild with `npm run build`
+# and commit the result when the frontend changes.
 
 # Editor / OS
 .DS_Store

@@ -1,8 +1,10 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.database import create_all_tables
@@ -40,12 +42,6 @@ app.add_middleware(
 )
 
 
-@app.get("/", include_in_schema=False)
-def index():
-    # Send anyone hitting the bare domain to the interactive API docs.
-    return RedirectResponse(url="/docs")
-
-
 @app.get("/health", tags=["meta"])
 def health_check():
     return {"status": "ok", "version": app.version}
@@ -63,3 +59,38 @@ app.include_router(properties.router, prefix="/api/v1")
 app.include_router(units.router, prefix="/api/v1")
 app.include_router(tenants.router, prefix="/api/v1")
 app.include_router(leases.router, prefix="/api/v1")
+
+
+# ---------------------------------------------------------------------------
+# Serve the built React SPA (frontend/dist).
+#
+# This MUST come after all API routers so /api/v1/* is matched first.
+# - /assets/* is served as static files (hashed JS/CSS bundles).
+# - Every other non-API path falls back to index.html so React Router can
+#   handle client-side routes (/properties, /leases, …) including hard refresh.
+# ---------------------------------------------------------------------------
+FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+
+if FRONTEND_DIST.exists():
+    app.mount(
+        "/assets",
+        StaticFiles(directory=FRONTEND_DIST / "assets"),
+        name="assets",
+    )
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    def serve_spa(full_path: str):
+        # Unknown API routes should still return a JSON 404, not the SPA shell.
+        if full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="Not Found")
+        # Serve a real file if it exists (favicon, vite.svg, …); otherwise the
+        # SPA entry point.
+        candidate = FRONTEND_DIST / full_path
+        if full_path and candidate.is_file():
+            return FileResponse(candidate)
+        return FileResponse(FRONTEND_DIST / "index.html")
+
+    print(f"✓ React frontend mounted from {FRONTEND_DIST}")
+else:
+    print(f"⚠ {FRONTEND_DIST} not found — React UI will not be served. "
+          f"Build it with: cd frontend && npm run build")
