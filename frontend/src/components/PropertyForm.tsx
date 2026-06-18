@@ -6,9 +6,12 @@ import {
   ownerAPI,
   propertyAPI,
 } from '../services/api';
-import type { Property, PropertyType } from '../types';
+import type { ManagementCompany, Owner, Property, PropertyType } from '../types';
 import { Field, NumberInput, Select, Textarea, TextInput } from './FormFields';
 import { Button } from './ui';
+import { Modal } from './Modal';
+import { OwnerForm } from './OwnerForm';
+import { ManagementCompanyForm } from './ManagementCompanyForm';
 import { useToast } from './Toast';
 
 const PROPERTY_TYPES: { value: PropertyType; label: string }[] = [
@@ -49,6 +52,19 @@ export const PropertyForm: React.FC<Props> = ({ existing, onSaved, onCancel }) =
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [ownerModalOpen, setOwnerModalOpen] = useState(false);
+  const [companyModalOpen, setCompanyModalOpen] = useState(false);
+
+  const handleOwnerCreated = (o: Owner) => {
+    setOwners((prev) => [...prev, { value: o.id, label: o.name }]);
+    setOwnerId(o.id);
+    setOwnerModalOpen(false);
+  };
+  const handleCompanyCreated = (c: ManagementCompany) => {
+    setCompanies((prev) => [...prev, { value: c.id, label: c.name }]);
+    setCompanyId(c.id);
+    setCompanyModalOpen(false);
+  };
 
   useEffect(() => {
     Promise.all([ownerAPI.list(), managementCompanyAPI.list(), jurisdictionAPI.list()])
@@ -112,6 +128,7 @@ export const PropertyForm: React.FC<Props> = ({ existing, onSaved, onCancel }) =
   };
 
   return (
+    <>
     <form
       onSubmit={(e) => {
         e.preventDefault();
@@ -157,15 +174,29 @@ export const PropertyForm: React.FC<Props> = ({ existing, onSaved, onCancel }) =
 
       <div className="grid grid-cols-2 gap-4">
         <Field label="Owner" required error={errors.ownerId}>
-          <Select value={ownerId} onChange={setOwnerId} options={owners} placeholder="Select owner…" />
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <Select value={ownerId} onChange={setOwnerId} options={owners} placeholder="Select owner…" />
+            </div>
+            <Button variant="secondary" onClick={() => setOwnerModalOpen(true)}>
+              + New
+            </Button>
+          </div>
         </Field>
         <Field label="Management company" error={errors.companyId}>
-          <Select
-            value={companyId ?? ''}
-            onChange={setCompanyId}
-            options={companies}
-            placeholder="None"
-          />
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <Select
+                value={companyId ?? ''}
+                onChange={setCompanyId}
+                options={companies}
+                placeholder="None"
+              />
+            </div>
+            <Button variant="secondary" onClick={() => setCompanyModalOpen(true)}>
+              + New
+            </Button>
+          </div>
         </Field>
       </div>
 
@@ -199,5 +230,20 @@ export const PropertyForm: React.FC<Props> = ({ existing, onSaved, onCancel }) =
         </Button>
       </div>
     </form>
+
+    <Modal open={ownerModalOpen} title="Add Owner" onClose={() => setOwnerModalOpen(false)}>
+      <OwnerForm onSaved={handleOwnerCreated} onCancel={() => setOwnerModalOpen(false)} />
+    </Modal>
+    <Modal
+      open={companyModalOpen}
+      title="Add Management Company"
+      onClose={() => setCompanyModalOpen(false)}
+    >
+      <ManagementCompanyForm
+        onSaved={handleCompanyCreated}
+        onCancel={() => setCompanyModalOpen(false)}
+      />
+    </Modal>
+    </>
   );
 };
