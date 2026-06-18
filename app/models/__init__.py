@@ -1,0 +1,37 @@
+"""SQLModel table models.
+
+Importing this package registers every table on ``SQLModel.metadata`` so that
+``create_all`` and Alembic autogenerate can see them.
+"""
+
+from app.models.email_approval import EmailApproval
+from app.models.finance import Expense, Payment
+from app.models.jurisdiction import Jurisdiction
+from app.models.lease import Lease, LeaseTenant
+from app.models.lease_break import (
+    LeaseBreakDocument,
+    LeaseBreakOption,
+    LeaseBreakRequest,
+)
+from app.models.organization import ManagementCompany, Owner
+from app.models.property import Property, Unit
+from app.models.template import LeaseTemplate
+from app.models.tenant import Tenant
+
+__all__ = [
+    "Jurisdiction",
+    "Owner",
+    "ManagementCompany",
+    "Property",
+    "Unit",
+    "Tenant",
+    "Lease",
+    "LeaseTenant",
+    "Payment",
+    "Expense",
+    "LeaseTemplate",
+    "LeaseBreakRequest",
+    "LeaseBreakOption",
+    "LeaseBreakDocument",
+    "EmailApproval",
+]
