@@ -5,6 +5,7 @@ import { PropertiesPage } from './pages/PropertiesPage';
 import { PropertyDetail } from './pages/PropertyDetail';
 import { LeasesPage } from './pages/LeasesPage';
 import { LeaseImportPage } from './pages/LeaseImportPage';
+import { LeaseDetail } from './pages/LeaseDetail';
 import { OwnersPage } from './pages/OwnersPage';
 import { ManagementCompaniesPage } from './pages/ManagementCompaniesPage';
 import { TenantsPage } from './pages/TenantsPage';
@@ -25,6 +26,7 @@ function App() {
           <Route path="/properties/:id" element={<PropertyDetail />} />
           <Route path="/leases" element={<LeasesPage />} />
           <Route path="/leases/import" element={<LeaseImportPage />} />
+          <Route path="/leases/:id" element={<LeaseDetail />} />
           <Route path="/owners" element={<OwnersPage />} />
           <Route path="/management-companies" element={<ManagementCompaniesPage />} />
           <Route path="/tenants" element={<TenantsPage />} />

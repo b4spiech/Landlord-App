@@ -1,5 +1,5 @@
 import uuid
-from datetime import date
+from datetime import date, datetime
 from typing import Optional
 
 from pydantic import BaseModel
@@ -7,6 +7,18 @@ from pydantic import BaseModel
 from app.models.enums import LeaseStatus, PaymentStatus, PaymentType
 from app.schemas.common import ORMModel, TimestampedRead
 from app.schemas.tenant import TenantRead
+
+
+class LeaseDocumentRead(TimestampedRead):
+    lease_id: Optional[uuid.UUID] = None
+    document_type: str
+    file_name: str
+    file_type: Optional[str] = None
+    file_size: Optional[int] = None
+    extraction_confidence: Optional[str] = None
+    extraction_notes: Optional[str] = None
+    uploaded_at: datetime
+    has_file: bool = False
 
 
 class LeaseTenantCreate(BaseModel):

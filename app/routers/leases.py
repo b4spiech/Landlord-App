@@ -2,7 +2,7 @@ import uuid
 from datetime import date
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
 from sqlmodel import Session, func, select
 
 from app.database import get_session
@@ -10,6 +10,7 @@ from app.models import Lease, LeaseDocument, LeaseTenant, Payment, Tenant
 from app.routers.crud import apply_updates, get_or_404
 from app.schemas.lease import (
     LeaseCreate,
+    LeaseDocumentRead,
     LeaseDetailRead,
     LeaseRead,
     LeaseUpdate,
@@ -258,3 +259,43 @@ def create_manual(req: CreateFromParsedRequest, session: Session = Depends(get_s
     # Same as create-from-parsed but without a stored document.
     req.document_id = None
     return _create_from_parsed(session, req)
+
+
+def _doc_to_read(doc: LeaseDocument) -> LeaseDocumentRead:
+    return LeaseDocumentRead(
+        id=doc.id,
+        created_at=doc.created_at,
+        updated_at=doc.updated_at,
+        lease_id=doc.lease_id,
+        document_type=doc.document_type,
+        file_name=doc.file_name,
+        file_type=doc.file_type,
+        file_size=doc.file_size,
+        extraction_confidence=doc.extraction_confidence,
+        extraction_notes=doc.extraction_notes,
+        uploaded_at=doc.uploaded_at,
+        has_file=doc.content is not None,
+    )
+
+
+@router.get("/{lease_id}/documents", response_model=list[LeaseDocumentRead])
+def list_lease_documents(lease_id: uuid.UUID, session: Session = Depends(get_session)):
+    get_or_404(session, Lease, lease_id, "Lease")
+    docs = session.exec(select(LeaseDocument).where(LeaseDocument.lease_id == lease_id)).all()
+    return [_doc_to_read(d) for d in docs]
+
+
+@router.get("/{lease_id}/documents/{document_id}/download")
+def download_lease_document(
+    lease_id: uuid.UUID, document_id: uuid.UUID, session: Session = Depends(get_session)
+):
+    doc = session.get(LeaseDocument, document_id)
+    if doc is None or doc.lease_id != lease_id:
+        raise HTTPException(status_code=404, detail="Document not found")
+    if doc.content is None:
+        raise HTTPException(status_code=404, detail="Document has no file")
+    return Response(
+        content=doc.content,
+        media_type=doc.file_type or "application/octet-stream",
+        headers={"Content-Disposition": f'attachment; filename="{doc.file_name}"'},
+    )

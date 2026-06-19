@@ -242,9 +242,47 @@ export interface Lease extends Timestamped {
   late_fee: number;
   rent_due_day: number;
   grace_period_days: number;
+  // Extended terms (document import)
+  lease_type?: string | null;
+  renewal_terms?: string | null;
+  payment_frequency?: string | null;
+  returned_check_fee?: number | null;
+  deposit_held_location?: string | null;
+  deposit_interest_rate?: number | null;
+  utilities_included?: string | null;
+  utilities_tenant_responsibility?: string | null;
+  occupancy_limit?: number | null;
+  pets_allowed?: boolean | null;
+  pet_restrictions?: string | null;
+  pet_deposit?: number | null;
+  pet_monthly_fee?: number | null;
+  parking_included?: boolean | null;
+  parking_spaces?: number | null;
+  parking_additional_fee?: number | null;
+  no_smoking?: boolean | null;
+  no_waterbeds?: boolean | null;
+  quiet_hours?: string | null;
+  lawn_maintenance_responsibility?: string | null;
+  trash_service_included?: boolean | null;
+  early_termination_allowed?: boolean | null;
+  early_termination_penalty?: number | null;
+  early_termination_notice_days?: number | null;
+  special_conditions?: string | null;
   docusign_envelope_id?: string | null;
   signed_date?: string | null;
   notes?: string | null;
+}
+
+export interface LeaseDocument extends Timestamped {
+  lease_id?: string | null;
+  document_type: string;
+  file_name: string;
+  file_type?: string | null;
+  file_size?: number | null;
+  extraction_confidence?: string | null;
+  extraction_notes?: string | null;
+  uploaded_at: string;
+  has_file: boolean;
 }
 
 // GET /leases/{id} returns the lease plus nested tenants + payments.

@@ -10,6 +10,7 @@ import type {
   LeaseBreakOption,
   LeaseBreakRequest,
   LeaseDetail,
+  LeaseDocument,
   ManagementCompany,
   Owner,
   ParseDocumentResult,
@@ -121,6 +122,12 @@ export const leaseImportAPI = {
     data<CreateLeaseResult>(api.post('/leases/create-from-parsed', body)),
   createManual: (body: CreateFromParsedBody) =>
     data<CreateLeaseResult>(api.post('/leases/create-manual', body)),
+};
+
+export const leaseDocumentAPI = {
+  list: (leaseId: string) => data<LeaseDocument[]>(api.get(`/leases/${leaseId}/documents`)),
+  downloadUrl: (leaseId: string, docId: string) =>
+    `${API_URL}/leases/${leaseId}/documents/${docId}/download`,
 };
 
 export const jurisdictionAPI = {

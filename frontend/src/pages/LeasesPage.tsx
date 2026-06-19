@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { leaseAPI } from '../services/api';
 import { useAsync } from '../lib/useAsync';
 import type { LeaseStatus } from '../types';
@@ -19,6 +19,7 @@ const FILTERS: { value: '' | LeaseStatus; label: string }[] = [
 ];
 
 export const LeasesPage = () => {
+  const navigate = useNavigate();
   const { data, loading, error, reload } = useAsync(() => leaseAPI.list());
   const [filter, setFilter] = useState<'' | LeaseStatus>('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -93,8 +94,12 @@ export const LeasesPage = () => {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filtered.map((l) => (
-                <tr key={l.id} className="hover:bg-gray-50">
-                  <td className="px-5 py-3 font-medium text-gray-900">
+                <tr
+                  key={l.id}
+                  onClick={() => navigate(`/leases/${l.id}`)}
+                  className="hover:bg-gray-50 cursor-pointer"
+                >
+                  <td className="px-5 py-3 font-medium text-blue-600">
                     {formatCurrency(l.monthly_rent)}/mo
                   </td>
                   <td className="px-5 py-3 text-gray-600">
