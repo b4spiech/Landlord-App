@@ -312,20 +312,43 @@ export interface LeaseBreakRequest extends Timestamped {
   desired_move_out_date: string;
   reason?: string | null;
   selected_option_id?: string | null;
-  calculation_context: Record<string, unknown>;
+  completed_at?: string | null;
 }
 
 export interface LeaseBreakOption extends Timestamped {
   lease_break_request_id: string;
-  option_type: 'buyout' | 'relet' | 'sublet' | 'mutual_termination' | 'forfeit_deposit';
+  option_number: number;
+  option_type: string;
   label: string;
   description?: string | null;
-  total_cost_to_tenant: number;
-  months_charged?: number | null;
-  line_items: Array<Record<string, unknown>>;
-  is_compliant: boolean;
-  compliance_note?: string | null;
+  terms?: string | null;
   is_selected: boolean;
+  buyout_multiple?: number | null;
+  monthly_rent_amount?: number | null;
+  last_months_rent_held?: number | null;
+  current_month_rent?: number | null;
+  buyout_amount_gross?: number | null;
+  last_month_credit?: number | null;
+  cash_due_at_signing?: number | null;
+  total_cash_collected?: number | null;
+  security_deposit_held?: number | null;
+  move_out_date?: string | null;
+  final_rent_due_date?: string | null;
+}
+
+export interface LeaseBreakDocumentMeta extends Timestamped {
+  lease_break_request_id: string;
+  document_type: string;
+  status: string;
+  file_name: string;
+  file_type?: string | null;
+  has_file: boolean;
+}
+
+export interface LeaseBreakDetail {
+  request: LeaseBreakRequest;
+  options: LeaseBreakOption[];
+  documents: LeaseBreakDocumentMeta[];
 }
 
 export type EmailApprovalStatus = 'draft' | 'approved' | 'sent' | 'failed' | 'rejected';

@@ -11,6 +11,7 @@ from app.database import create_all_tables
 from app.routers import (
     hoas,
     jurisdictions,
+    lease_break,
     leases,
     management_companies,
     owners,
@@ -59,6 +60,7 @@ app.include_router(hoas.router, prefix="/api/v1")
 app.include_router(properties.router, prefix="/api/v1")
 app.include_router(tenants.router, prefix="/api/v1")
 app.include_router(leases.router, prefix="/api/v1")
+app.include_router(lease_break.router, prefix="/api/v1")
 
 
 # ---------------------------------------------------------------------------

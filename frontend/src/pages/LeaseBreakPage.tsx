@@ -14,9 +14,9 @@ export const LeaseBreakPage = () => {
       <PageHeader title="Lease Break" subtitle="Guided early-termination workflow" />
 
       <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-lg px-4 py-3 text-sm mb-6">
-        <strong>Preview mode.</strong> Options, compliance checks, and the email draft are computed
-        in the browser. Persistence, real email delivery, and DocuSign routing arrive with backend
-        Milestones 5–6.
+        Generate buyout options with exact cash-due figures, record the tenant's selection, and
+        produce a signable buyout agreement PDF. Email delivery and e-signature routing are not yet
+        wired up.
       </div>
 
       {loading && <Spinner />}

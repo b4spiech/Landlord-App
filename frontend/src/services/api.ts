@@ -7,6 +7,8 @@ import type {
   HOADocument,
   Jurisdiction,
   Lease,
+  LeaseBreakDetail,
+  LeaseBreakDocumentMeta,
   LeaseBreakOption,
   LeaseBreakRequest,
   LeaseDetail,
@@ -159,26 +161,20 @@ export const hoaDocumentAPI = {
   remove: (hoaId: string, docId: string) => api.delete(`/hoas/${hoaId}/documents/${docId}`),
 };
 
-// ---------------------------------------------------------------------------
-// Planned endpoints (backend Milestones 5-6) — will 404 until implemented.
-// ---------------------------------------------------------------------------
-
 export const leaseBreakAPI = {
   initiate: (body: { lease_id: string; desired_move_out_date: string; reason?: string }) =>
     data<LeaseBreakRequest>(api.post('/lease-breaks/initiate', body)),
-  get: (requestId: string) => data<LeaseBreakRequest>(api.get(`/lease-breaks/${requestId}`)),
-  presentOptions: (requestId: string, body: unknown) =>
-    data<{ options: LeaseBreakOption[] }>(
-      api.post(`/lease-breaks/${requestId}/present-options`, body),
-    ),
-  selectOption: (requestId: string, body: { option_id: string }) =>
-    data<LeaseBreakRequest>(api.post(`/lease-breaks/${requestId}/select-option`, body)),
-  getDocuments: (requestId: string) =>
-    data<unknown[]>(api.get(`/lease-breaks/${requestId}/documents`)),
-  approveEmail: (requestId: string, body?: unknown) =>
-    data<EmailApproval>(api.post(`/lease-breaks/${requestId}/approve-email`, body)),
-  routeForSignature: (requestId: string, body?: unknown) =>
-    data<{ envelope_id: string }>(api.post(`/lease-breaks/${requestId}/route-for-signature`, body)),
+  get: (requestId: string) => data<LeaseBreakDetail>(api.get(`/lease-breaks/${requestId}`)),
+  calculateOptions: (
+    requestId: string,
+    body: { move_out_date: string; last_months_rent_held?: number; buyout_multiple?: number },
+  ) => data<LeaseBreakOption[]>(api.post(`/lease-breaks/${requestId}/calculate-options`, body)),
+  selectOption: (requestId: string, body: { option_id: string; tenant_id?: string }) =>
+    data<LeaseBreakOption>(api.post(`/lease-breaks/${requestId}/select-option`, body)),
+  generateAgreement: (requestId: string, body: { option_id: string }) =>
+    data<LeaseBreakDocumentMeta>(api.post(`/lease-breaks/${requestId}/generate-agreement`, body)),
+  documentDownloadUrl: (requestId: string, docId: string) =>
+    `${API_URL}/lease-breaks/${requestId}/documents/${docId}/download`,
 };
 
 export const emailApprovalAPI = {
