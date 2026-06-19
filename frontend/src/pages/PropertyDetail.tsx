@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { hoaAPI, leaseAPI, propertyAPI } from '../services/api';
 import { useAsync } from '../lib/useAsync';
 import { Button, Card, ErrorState, PageHeader, Spinner } from '../components/ui';
@@ -10,10 +10,13 @@ import { formatCurrency, formatDate, leaseStatusVariant, propertyTypeLabel } fro
 
 export const PropertyDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [editOpen, setEditOpen] = useState(false);
   const { data, loading, error, reload } = useAsync(async () => {
     const property = await propertyAPI.get(id!);
-    const leases = await leaseAPI.list({ property_id: id });
+    const leaseList = await leaseAPI.list({ property_id: id });
+    // Fetch each lease's detail to include tenant names (usually just one).
+    const leases = await Promise.all(leaseList.map((l) => leaseAPI.get(l.id)));
     const hoa = property.hoa_id ? await hoaAPI.get(property.hoa_id) : null;
     return { property, leases, hoa };
   }, [id]);
@@ -130,17 +133,25 @@ export const PropertyDetail = () => {
         </div>
         <div className="divide-y divide-gray-100">
           {leases.length === 0 && <p className="px-5 py-6 text-sm text-gray-500">No leases.</p>}
-          {leases.map((l) => (
-            <div key={l.id} className="flex items-center justify-between px-5 py-3">
-              <div>
-                <p className="font-medium text-gray-900">{formatCurrency(l.monthly_rent)}/mo</p>
-                <p className="text-sm text-gray-500">
-                  {formatDate(l.start_date)} → {formatDate(l.end_date)}
-                </p>
+          {leases.map((l) => {
+            const tenantNames = l.tenants.map((t) => `${t.first_name} ${t.last_name}`).join(', ');
+            return (
+              <div
+                key={l.id}
+                onClick={() => navigate(`/leases/${l.id}`)}
+                className="flex items-center justify-between px-5 py-3 hover:bg-gray-50 cursor-pointer"
+              >
+                <div>
+                  <p className="font-medium text-blue-600">{formatCurrency(l.monthly_rent)}/mo</p>
+                  <p className="text-sm text-gray-700">{tenantNames || 'No tenants'}</p>
+                  <p className="text-xs text-gray-500">
+                    {formatDate(l.start_date)} → {formatDate(l.end_date)}
+                  </p>
+                </div>
+                <StatusBadge status={l.status} variant={leaseStatusVariant(l.status)} />
               </div>
-              <StatusBadge status={l.status} variant={leaseStatusVariant(l.status)} />
-            </div>
-          ))}
+            );
+          })}
         </div>
       </Card>
 
