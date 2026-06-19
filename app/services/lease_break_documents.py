@@ -67,26 +67,45 @@ def build_buyout_agreement_pdf(option, lease, prop, owner, tenants) -> bytes:
     move_month = _month_name(option.move_out_date)
     total_from_tenant = (option.current_month_rent or 0) + (option.cash_due_at_signing or 0)
 
+    label = ParagraphStyle("PLabel", parent=ss["BodyText"], fontSize=7.5, textColor=colors.grey,
+                           leading=10, spaceAfter=1)
+    val = ParagraphStyle("PVal", parent=ss["BodyText"], fontSize=10, leading=13, spaceAfter=0)
+    addr = ParagraphStyle("PAddr", parent=ss["BodyText"], fontSize=9, leading=12, textColor=colors.HexColor("#444444"))
+
+    def cell(lbl: str, value: str, sub: str = ""):
+        # A table cell that stacks the label directly above its value, so the
+        # label/value gap is vertical (tight) rather than a wide horizontal gap.
+        flow = [Paragraph(lbl.upper(), label), Paragraph(value or "—", val)]
+        if sub:
+            flow.append(Paragraph(sub, addr))
+        return flow
+
     el = []
     el.append(Paragraph("Early Lease Termination &amp; Buyout Agreement", ss["DocTitle"]))
     el.append(Paragraph(f"Executed on {date.today():%B %d, %Y}", ss["Small"]))
-    el.append(Spacer(1, 10))
+    el.append(Spacer(1, 8))
 
     parties = [
-        ["Landlord:", owner.name if owner else "—", "Property:", prop.name if prop else "—"],
-        ["", _address(owner) if owner else "", "", _address(prop) if prop else ""],
-        ["Tenant(s):", tenant_names or "—", "Move-out date:", option.move_out_date or "—"],
+        [
+            cell("Landlord", owner.name if owner else "—", _address(owner) if owner else ""),
+            cell("Property", prop.name if prop else "—", _address(prop) if prop else ""),
+        ],
+        [
+            cell("Tenant(s)", tenant_names),
+            cell("Move-out date", option.move_out_date or "—"),
+        ],
     ]
-    pt = Table(parties, colWidths=[1.1 * inch, 2.5 * inch, 1.2 * inch, 2.0 * inch])
+    pt = Table(parties, colWidths=[3.3 * inch, 3.3 * inch])
     pt.setStyle(TableStyle([
-        ("FONTSIZE", (0, 0), (-1, -1), 9),
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("TEXTCOLOR", (0, 0), (0, -1), colors.grey),
-        ("TEXTCOLOR", (2, 0), (2, -1), colors.grey),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+        ("TOPPADDING", (0, 0), (-1, -1), 0),
+        ("BOTTOMPADDING", (0, 0), (-1, 0), 10),
+        ("BOTTOMPADDING", (0, 1), (-1, 1), 4),
     ]))
     el.append(pt)
-    el.append(Spacer(1, 8))
+    el.append(Spacer(1, 6))
     el.append(HRFlowable(width="100%", color=colors.lightgrey))
 
     el.append(Paragraph("1. Early Termination Buyout", ss["H"]))

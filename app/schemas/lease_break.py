@@ -28,6 +28,15 @@ class GenerateAgreementRequest(BaseModel):
     option_id: str
 
 
+class RouteForSignatureRequest(BaseModel):
+    document_id: Optional[str] = None  # defaults to the most recent generated agreement
+
+
+class RouteForSignatureResult(BaseModel):
+    envelope_id: str
+    status: str = "sent"
+
+
 class LeaseBreakOptionRead(TimestampedRead):
     lease_break_request_id: uuid.UUID
     option_number: int

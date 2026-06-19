@@ -175,6 +175,10 @@ export const leaseBreakAPI = {
     data<LeaseBreakDocumentMeta>(api.post(`/lease-breaks/${requestId}/generate-agreement`, body)),
   documentDownloadUrl: (requestId: string, docId: string) =>
     `${API_URL}/lease-breaks/${requestId}/documents/${docId}/download`,
+  routeForSignature: (requestId: string, body: { document_id?: string }) =>
+    data<{ envelope_id: string; status: string }>(
+      api.post(`/lease-breaks/${requestId}/route-for-signature`, body),
+    ),
 };
 
 export const emailApprovalAPI = {

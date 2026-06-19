@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlmodel import Session, select
 
 from app.database import get_session
@@ -15,7 +15,7 @@ from app.models import (
     Property,
     Tenant,
 )
-from app.models.enums import DocumentType, LeaseBreakStatus
+from app.models.enums import DocumentStatus, DocumentType, LeaseBreakStatus
 from app.routers.crud import get_or_404
 from app.schemas.lease_break import (
     CalculateOptionsRequest,
@@ -25,8 +25,12 @@ from app.schemas.lease_break import (
     LeaseBreakDocumentRead,
     LeaseBreakOptionRead,
     LeaseBreakRequestRead,
+    RouteForSignatureRequest,
+    RouteForSignatureResult,
     SelectOptionRequest,
 )
+from app.services import docusign_service
+from app.services.docusign_service import DocuSignError, EnvelopeSigner
 from app.services.lease_break_calculator import LeaseBreakCalculator
 from app.services.lease_break_documents import build_buyout_agreement_pdf
 
@@ -306,3 +310,124 @@ def download_document(
         media_type=doc.file_type or "application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{doc.file_name}"'},
     )
+
+
+@router.post("/{request_id}/route-for-signature", response_model=RouteForSignatureResult)
+def route_for_signature(
+    request_id: uuid.UUID,
+    body: RouteForSignatureRequest,
+    session: Session = Depends(get_session),
+):
+    req = get_or_404(session, LeaseBreakRequest, request_id, "Lease break request")
+    if not docusign_service.is_configured():
+        raise HTTPException(
+            status_code=422,
+            detail="DocuSign is not configured on the server. Set the DocuSign integration "
+            "key, user ID, account ID, and private key to enable e-signature routing.",
+        )
+
+    # Pick the document to route: explicit id, else the most recent agreement.
+    if body.document_id:
+        doc = session.get(LeaseBreakDocument, uuid.UUID(body.document_id))
+        if doc is None or doc.lease_break_request_id != request_id:
+            raise HTTPException(status_code=404, detail="Document not found")
+    else:
+        doc = session.exec(
+            select(LeaseBreakDocument)
+            .where(LeaseBreakDocument.lease_break_request_id == request_id)
+            .order_by(LeaseBreakDocument.created_at.desc())
+        ).first()
+    if doc is None or doc.content is None:
+        raise HTTPException(
+            status_code=422, detail="Generate the buyout agreement before routing for signature."
+        )
+
+    lease = get_or_404(session, Lease, req.lease_id, "Lease")
+    prop = session.get(Property, lease.property_id)
+    owner = session.get(Owner, prop.owner_id) if prop else None
+    tenants = _tenants_for_lease(session, lease.id)
+
+    # Build signers (landlord + each tenant); every signer needs an email.
+    signers: list[EnvelopeSigner] = []
+    missing: list[str] = []
+    if owner and owner.email:
+        signers.append(EnvelopeSigner(name=owner.name, email=owner.email, anchor_string="Landlord:"))
+    else:
+        missing.append(f"landlord ({owner.name if owner else 'owner'})")
+    for t in tenants:
+        full = f"{t.first_name} {t.last_name}"
+        if t.email:
+            signers.append(EnvelopeSigner(name=full, email=t.email, anchor_string=f"Tenant ({full}):"))
+        else:
+            missing.append(full)
+    if missing:
+        raise HTTPException(
+            status_code=422,
+            detail="Missing email address for: " + ", ".join(missing),
+        )
+
+    subject = f"Lease buyout agreement for {prop.name if prop else 'your lease'}"
+    try:
+        envelope_id = docusign_service.create_envelope_from_pdf(
+            doc.content, doc.file_name, subject, signers
+        )
+    except DocuSignError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    doc.docusign_envelope_id = envelope_id
+    doc.status = DocumentStatus.sent_for_signature.value
+    req.docusign_envelope_id = envelope_id
+    req.status = LeaseBreakStatus.out_for_signature.value
+    session.add(doc)
+    session.add(req)
+    session.commit()
+    return RouteForSignatureResult(envelope_id=envelope_id, status="sent")
+
+
+@router.post("/webhook/docusign")
+async def docusign_webhook(request: Request, session: Session = Depends(get_session)):
+    """Receive DocuSign Connect status updates and reflect them on the request.
+
+    Tolerant of payload shape; never raises so DocuSign won't disable the hook.
+    """
+    try:
+        payload = await request.json()
+    except Exception:
+        return {"ok": True}
+
+    data = payload.get("data", payload) if isinstance(payload, dict) else {}
+    envelope_id = (
+        data.get("envelopeId")
+        or data.get("envelope_id")
+        or (data.get("envelopeSummary") or {}).get("envelopeId")
+    )
+    status_val = (
+        data.get("status")
+        or (data.get("envelopeSummary") or {}).get("status")
+        or payload.get("event")
+        if isinstance(payload, dict)
+        else None
+    )
+    if not envelope_id:
+        return {"ok": True}
+
+    req = session.exec(
+        select(LeaseBreakRequest).where(LeaseBreakRequest.docusign_envelope_id == str(envelope_id))
+    ).first()
+    if req is None:
+        return {"ok": True}
+
+    if status_val and str(status_val).lower() in {"completed", "envelope-completed"}:
+        req.status = LeaseBreakStatus.completed.value
+        req.completed_at = datetime.now()
+        session.add(req)
+        for doc in session.exec(
+            select(LeaseBreakDocument).where(
+                LeaseBreakDocument.docusign_envelope_id == str(envelope_id)
+            )
+        ).all():
+            doc.status = DocumentStatus.signed.value
+            doc.signed_at = datetime.now()
+            session.add(doc)
+        session.commit()
+    return {"ok": True}

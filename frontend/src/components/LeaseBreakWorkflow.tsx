@@ -26,6 +26,7 @@ export const LeaseBreakWorkflow: React.FC<{ leases: Lease[]; initialLeaseId?: st
   const [options, setOptions] = useState<LeaseBreakOption[]>([]);
   const [selected, setSelected] = useState<LeaseBreakOption | null>(null);
   const [doc, setDoc] = useState<LeaseBreakDocumentMeta | null>(null);
+  const [envelopeId, setEnvelopeId] = useState('');
   const [busy, setBusy] = useState(false);
 
   const lease = useMemo(() => leases.find((l) => l.id === leaseId), [leaseId, leases]);
@@ -73,12 +74,27 @@ export const LeaseBreakWorkflow: React.FC<{ leases: Lease[]; initialLeaseId?: st
     }
   };
 
+  const sendForSignature = async () => {
+    if (!doc) return;
+    setBusy(true);
+    try {
+      const res = await leaseBreakAPI.routeForSignature(requestId, { document_id: doc.id });
+      setEnvelopeId(res.envelope_id);
+      toast.success('Sent for signature via DocuSign');
+    } catch (e) {
+      toast.error(getErrorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const generate = async () => {
     if (!selected) return;
     setBusy(true);
     try {
       const d = await leaseBreakAPI.generateAgreement(requestId, { option_id: selected.id });
       setDoc(d);
+      setEnvelopeId('');
       toast.success('Buyout agreement generated');
       window.open(leaseBreakAPI.documentDownloadUrl(requestId, d.id), '_blank');
     } catch (e) {
@@ -227,14 +243,31 @@ export const LeaseBreakWorkflow: React.FC<{ leases: Lease[]; initialLeaseId?: st
               )}
             </div>
             {doc && (
-              <p className="mt-3 text-sm">
-                <a
-                  href={leaseBreakAPI.documentDownloadUrl(requestId, doc.id)}
-                  className="text-blue-600 hover:underline"
-                >
-                  {doc.file_name}
-                </a>
-              </p>
+              <div className="mt-4 border-t pt-4">
+                <p className="text-sm">
+                  Generated:{' '}
+                  <a
+                    href={leaseBreakAPI.documentDownloadUrl(requestId, doc.id)}
+                    className="text-blue-600 hover:underline"
+                  >
+                    {doc.file_name}
+                  </a>
+                </p>
+                <div className="mt-3 flex items-center gap-3">
+                  <Button onClick={sendForSignature} disabled={busy}>
+                    {busy ? 'Sending…' : 'Send for Signature (DocuSign)'}
+                  </Button>
+                  {envelopeId && (
+                    <span className="text-sm text-green-700">
+                      Sent · envelope {envelopeId.slice(0, 8)}…
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Routes the agreement to the landlord and each tenant for e-signature. Requires
+                  DocuSign credentials configured on the server and an email on each signer.
+                </p>
+              </div>
             )}
           </Card>
         </div>

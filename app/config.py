@@ -14,6 +14,10 @@ class Settings(BaseSettings):
     DOCUSIGN_USER_ID: str = ""
     DOCUSIGN_BASE_URL: str = "https://demo.docusign.net/restapi"
     DOCUSIGN_WEBHOOK_SECRET: str = ""
+    # JWT (server-to-server) auth
+    DOCUSIGN_INTEGRATION_KEY: str = ""  # OAuth client/integration key (falls back to DOCUSIGN_API_KEY)
+    DOCUSIGN_PRIVATE_KEY: str = ""  # RSA private key (PEM)
+    DOCUSIGN_OAUTH_HOST: str = "account-d.docusign.com"  # demo; account.docusign.com for prod
 
     SMTP_HOST: str = "smtp.gmail.com"
     SMTP_PORT: int = 587
