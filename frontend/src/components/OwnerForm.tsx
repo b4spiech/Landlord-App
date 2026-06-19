@@ -6,20 +6,21 @@ import { Button } from './ui';
 import { useToast } from './Toast';
 
 interface Props {
+  existing?: Owner;
   onSaved: (o: Owner) => void;
   onCancel: () => void;
 }
 
-export const OwnerForm: React.FC<Props> = ({ onSaved, onCancel }) => {
+export const OwnerForm: React.FC<Props> = ({ existing, onSaved, onCancel }) => {
   const toast = useToast();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [isEntity, setIsEntity] = useState(false);
-  const [address1, setAddress1] = useState('');
-  const [city, setCity] = useState('');
-  const [state, setState] = useState('');
-  const [postal, setPostal] = useState('');
+  const [name, setName] = useState(existing?.name ?? '');
+  const [email, setEmail] = useState(existing?.email ?? '');
+  const [phone, setPhone] = useState(existing?.phone ?? '');
+  const [isEntity, setIsEntity] = useState(existing?.is_entity ?? false);
+  const [address1, setAddress1] = useState(existing?.address_line1 ?? '');
+  const [city, setCity] = useState(existing?.city ?? '');
+  const [state, setState] = useState(existing?.state ?? '');
+  const [postal, setPostal] = useState(existing?.postal_code ?? '');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -35,18 +36,21 @@ export const OwnerForm: React.FC<Props> = ({ onSaved, onCancel }) => {
   const handleSubmit = async () => {
     if (!validate()) return;
     setSubmitting(true);
+    const body = {
+      name: name.trim(),
+      email: email.trim() || null,
+      phone: phone.trim() || null,
+      is_entity: isEntity,
+      address_line1: address1.trim() || null,
+      city: city.trim() || null,
+      state: state ? state.toUpperCase() : null,
+      postal_code: postal.trim() || null,
+    };
     try {
-      const owner = await ownerAPI.create({
-        name: name.trim(),
-        email: email.trim() || null,
-        phone: phone.trim() || null,
-        is_entity: isEntity,
-        address_line1: address1.trim() || null,
-        city: city.trim() || null,
-        state: state ? state.toUpperCase() : null,
-        postal_code: postal.trim() || null,
-      });
-      toast.success('Owner created');
+      const owner = existing
+        ? await ownerAPI.update(existing.id, body)
+        : await ownerAPI.create(body);
+      toast.success(existing ? 'Owner updated' : 'Owner created');
       onSaved(owner);
     } catch (err) {
       toast.error(getErrorMessage(err));
@@ -97,7 +101,7 @@ export const OwnerForm: React.FC<Props> = ({ onSaved, onCancel }) => {
           Cancel
         </Button>
         <Button type="submit" disabled={submitting}>
-          {submitting ? 'Saving…' : 'Create owner'}
+          {submitting ? 'Saving…' : existing ? 'Save changes' : 'Create owner'}
         </Button>
       </div>
     </form>

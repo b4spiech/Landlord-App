@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { leaseAPI } from '../services/api';
 import { useAsync } from '../lib/useAsync';
 import type { LeaseStatus } from '../types';
@@ -37,8 +38,23 @@ export const LeasesPage = () => {
       <PageHeader
         title="Leases"
         subtitle="All lease agreements"
-        action={<Button onClick={() => setModalOpen(true)}>+ New Lease</Button>}
+        action={
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link to="/lease-breaks">
+              <Button variant="secondary">Lease Breaks</Button>
+            </Link>
+            <Link to="/approvals">
+              <Button variant="secondary">Approvals</Button>
+            </Link>
+            <Button onClick={() => setModalOpen(true)}>+ New Lease</Button>
+          </div>
+        }
       />
+
+      <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-600 mb-4">
+        Lease actions like the <strong>Lease Break</strong> workflow and email{' '}
+        <strong>Approvals</strong> live here, alongside your leases.
+      </div>
 
       <div className="flex gap-2 mb-4 flex-wrap">
         {FILTERS.map((f) => (

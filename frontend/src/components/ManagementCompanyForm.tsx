@@ -6,16 +6,17 @@ import { Button } from './ui';
 import { useToast } from './Toast';
 
 interface Props {
+  existing?: ManagementCompany;
   onSaved: (c: ManagementCompany) => void;
   onCancel: () => void;
 }
 
-export const ManagementCompanyForm: React.FC<Props> = ({ onSaved, onCancel }) => {
+export const ManagementCompanyForm: React.FC<Props> = ({ existing, onSaved, onCancel }) => {
   const toast = useToast();
-  const [name, setName] = useState('');
-  const [legalName, setLegalName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
+  const [name, setName] = useState(existing?.name ?? '');
+  const [legalName, setLegalName] = useState(existing?.legal_name ?? '');
+  const [email, setEmail] = useState(existing?.email ?? '');
+  const [phone, setPhone] = useState(existing?.phone ?? '');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -30,14 +31,17 @@ export const ManagementCompanyForm: React.FC<Props> = ({ onSaved, onCancel }) =>
   const handleSubmit = async () => {
     if (!validate()) return;
     setSubmitting(true);
+    const body = {
+      name: name.trim(),
+      legal_name: legalName.trim() || null,
+      email: email.trim() || null,
+      phone: phone.trim() || null,
+    };
     try {
-      const company = await managementCompanyAPI.create({
-        name: name.trim(),
-        legal_name: legalName.trim() || null,
-        email: email.trim() || null,
-        phone: phone.trim() || null,
-      });
-      toast.success('Management company created');
+      const company = existing
+        ? await managementCompanyAPI.update(existing.id, body)
+        : await managementCompanyAPI.create(body);
+      toast.success(existing ? 'Management company updated' : 'Management company created');
       onSaved(company);
     } catch (err) {
       toast.error(getErrorMessage(err));
@@ -73,7 +77,7 @@ export const ManagementCompanyForm: React.FC<Props> = ({ onSaved, onCancel }) =>
           Cancel
         </Button>
         <Button type="submit" disabled={submitting}>
-          {submitting ? 'Saving…' : 'Create company'}
+          {submitting ? 'Saving…' : existing ? 'Save changes' : 'Create company'}
         </Button>
       </div>
     </form>
