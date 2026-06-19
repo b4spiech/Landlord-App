@@ -46,6 +46,9 @@ export const LeasesPage = () => {
             <Link to="/approvals">
               <Button variant="secondary">Approvals</Button>
             </Link>
+            <Link to="/leases/import">
+              <Button variant="secondary">Import from Document</Button>
+            </Link>
             <Button onClick={() => setModalOpen(true)}>+ New Lease</Button>
           </div>
         }

@@ -26,6 +26,23 @@ class Tenant(TimestampMixin, table=True):
 
     emergency_contact_name: Optional[str] = Field(default=None, max_length=200)
     emergency_contact_phone: Optional[str] = Field(default=None, max_length=30)
+    emergency_contact_relationship: Optional[str] = Field(default=None, max_length=100)
+
+    # Identification (sensitive — not populated by document parsing)
+    drivers_license: Optional[str] = Field(default=None, max_length=50)
+    ssn_or_tax_id: Optional[str] = Field(default=None, max_length=50)
+
+    # Employment
+    employer_name: Optional[str] = Field(default=None, max_length=200)
+    employer_phone: Optional[str] = Field(default=None, max_length=30)
+    job_title: Optional[str] = Field(default=None, max_length=150)
+    annual_income: Optional[float] = Field(default=None)
+
+    # Reference
+    reference_name: Optional[str] = Field(default=None, max_length=200)
+    reference_phone: Optional[str] = Field(default=None, max_length=30)
+    reference_relationship: Optional[str] = Field(default=None, max_length=100)
+
     notes: Optional[str] = Field(default=None)
 
     @property

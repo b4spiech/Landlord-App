@@ -46,6 +46,32 @@ class LeaseBase(BaseModel):
     late_fee: float = 0.0
     rent_due_day: int = 1
     grace_period_days: int = 5
+    # Extended terms (often from document import)
+    lease_type: Optional[str] = None
+    renewal_terms: Optional[str] = None
+    payment_frequency: Optional[str] = None
+    returned_check_fee: Optional[float] = None
+    deposit_held_location: Optional[str] = None
+    deposit_interest_rate: Optional[float] = None
+    utilities_included: Optional[str] = None
+    utilities_tenant_responsibility: Optional[str] = None
+    occupancy_limit: Optional[int] = None
+    pets_allowed: Optional[bool] = None
+    pet_restrictions: Optional[str] = None
+    pet_deposit: Optional[float] = None
+    pet_monthly_fee: Optional[float] = None
+    parking_included: Optional[bool] = None
+    parking_spaces: Optional[int] = None
+    parking_additional_fee: Optional[float] = None
+    no_smoking: Optional[bool] = None
+    no_waterbeds: Optional[bool] = None
+    quiet_hours: Optional[str] = None
+    lawn_maintenance_responsibility: Optional[str] = None
+    trash_service_included: Optional[bool] = None
+    early_termination_allowed: Optional[bool] = None
+    early_termination_penalty: Optional[float] = None
+    early_termination_notice_days: Optional[int] = None
+    special_conditions: Optional[str] = None
     notes: Optional[str] = None
 
 

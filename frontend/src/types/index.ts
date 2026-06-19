@@ -141,6 +141,83 @@ export interface HOADocument extends Timestamped {
   has_file: boolean;
 }
 
+// --- AI lease document import ---------------------------------------------
+
+export interface ParsedTenant {
+  first_name?: string | null;
+  last_name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  date_of_birth?: string | null;
+  drivers_license?: string | null;
+  emergency_contact_name?: string | null;
+  emergency_contact_phone?: string | null;
+  emergency_contact_relationship?: string | null;
+  employer_name?: string | null;
+  employer_phone?: string | null;
+  job_title?: string | null;
+  annual_income?: number | null;
+  reference_name?: string | null;
+  reference_phone?: string | null;
+  reference_relationship?: string | null;
+}
+
+export interface ParsedLease {
+  property_address?: string | null;
+  unit_number?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  monthly_rent?: number | null;
+  security_deposit?: number | null;
+  late_fee?: number | null;
+  late_fee_grace_days?: number | null;
+  rent_due_day?: number | null;
+  payment_frequency?: string | null;
+  returned_check_fee?: number | null;
+  lease_type?: string | null;
+  renewal_terms?: string | null;
+  deposit_held_location?: string | null;
+  deposit_interest_rate?: number | null;
+  utilities_included?: string | null;
+  utilities_tenant_responsibility?: string | null;
+  occupancy_limit?: number | null;
+  pets_allowed?: boolean | null;
+  pet_restrictions?: string | null;
+  pet_deposit?: number | null;
+  pet_monthly_fee?: number | null;
+  parking_included?: boolean | null;
+  parking_spaces?: number | null;
+  parking_additional_fee?: number | null;
+  no_smoking?: boolean | null;
+  no_waterbeds?: boolean | null;
+  quiet_hours?: string | null;
+  lawn_maintenance_responsibility?: string | null;
+  trash_service_included?: boolean | null;
+  early_termination_allowed?: boolean | null;
+  early_termination_penalty?: number | null;
+  early_termination_notice_days?: number | null;
+  special_conditions?: string | null;
+}
+
+export interface ParsedLeaseData {
+  tenants: ParsedTenant[];
+  lease: ParsedLease;
+  confidence: 'high' | 'medium' | 'low' | string;
+  notes?: string | null;
+}
+
+export interface ParseDocumentResult {
+  document_id: string;
+  parsed: ParsedLeaseData;
+}
+
+export interface CreateLeaseResult {
+  lease_id: string;
+  tenants_created: number;
+  document_id?: string | null;
+  message: string;
+}
+
 export interface Payment extends Timestamped {
   lease_id: string;
   payment_type: PaymentType;

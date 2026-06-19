@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type { AxiosResponse } from 'axios';
 import type {
+  CreateLeaseResult,
   EmailApproval,
   HOA,
   HOADocument,
@@ -11,6 +12,8 @@ import type {
   LeaseDetail,
   ManagementCompany,
   Owner,
+  ParseDocumentResult,
+  ParsedLeaseData,
   Property,
   Tenant,
   Unit,
@@ -95,6 +98,29 @@ export const leaseAPI = {
   create: (body: LeaseCreateInput) => data<LeaseDetail>(api.post('/leases', body)),
   update: (id: string, body: Partial<Lease>) =>
     data<LeaseDetail>(api.patch(`/leases/${id}`, body)),
+};
+
+export interface CreateFromParsedBody {
+  parsed: ParsedLeaseData;
+  property_id: string;
+  unit_id: string;
+  management_company_id?: string | null;
+  jurisdiction_id?: string | null;
+  document_id?: string | null;
+}
+
+export const leaseImportAPI = {
+  parseDocument: (fileForm: FormData) =>
+    data<ParseDocumentResult>(
+      api.post('/leases/parse-document', fileForm, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 120000, // parsing can take up to ~2 min
+      }),
+    ),
+  createFromParsed: (body: CreateFromParsedBody) =>
+    data<CreateLeaseResult>(api.post('/leases/create-from-parsed', body)),
+  createManual: (body: CreateFromParsedBody) =>
+    data<CreateLeaseResult>(api.post('/leases/create-manual', body)),
 };
 
 export const jurisdictionAPI = {

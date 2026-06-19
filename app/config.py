@@ -6,6 +6,9 @@ class Settings(BaseSettings):
     PORT: int = 8000
     ALLOWED_ORIGINS: str = "http://localhost:5173,http://localhost:8000"
 
+    ANTHROPIC_API_KEY: str = ""
+    ANTHROPIC_MODEL: str = "claude-sonnet-4-6"
+
     DOCUSIGN_ACCOUNT_ID: str = ""
     DOCUSIGN_API_KEY: str = ""
     DOCUSIGN_USER_ID: str = ""

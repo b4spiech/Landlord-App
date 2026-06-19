@@ -18,6 +18,15 @@ class TenantBase(BaseModel):
     postal_code: Optional[str] = None
     emergency_contact_name: Optional[str] = None
     emergency_contact_phone: Optional[str] = None
+    emergency_contact_relationship: Optional[str] = None
+    drivers_license: Optional[str] = None
+    employer_name: Optional[str] = None
+    employer_phone: Optional[str] = None
+    job_title: Optional[str] = None
+    annual_income: Optional[float] = None
+    reference_name: Optional[str] = None
+    reference_phone: Optional[str] = None
+    reference_relationship: Optional[str] = None
     notes: Optional[str] = None
 
 

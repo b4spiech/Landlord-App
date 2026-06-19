@@ -14,4 +14,5 @@ docusign-esign==3.25.0
 aiosmtplib==3.0.1
 python-multipart==0.0.6
 httpx==0.25.2
+anthropic==0.69.0
 pytest==7.4.3
