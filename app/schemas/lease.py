@@ -48,7 +48,6 @@ class PaymentRead(TimestampedRead):
 
 
 class LeaseBase(BaseModel):
-    unit_id: uuid.UUID
     property_id: uuid.UUID
     status: LeaseStatus = LeaseStatus.draft
     start_date: date
@@ -92,7 +91,6 @@ class LeaseCreate(LeaseBase):
 
 
 class LeaseUpdate(BaseModel):
-    unit_id: Optional[uuid.UUID] = None
     property_id: Optional[uuid.UUID] = None
     status: Optional[LeaseStatus] = None
     start_date: Optional[date] = None

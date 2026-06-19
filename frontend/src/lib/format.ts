@@ -1,4 +1,4 @@
-import type { LeaseStatus, PropertyType, UnitStatus } from '../types';
+import type { LeaseStatus, PropertyType } from '../types';
 
 export function formatCurrency(value?: number | null): string {
   if (value == null) return '—';
@@ -41,19 +41,6 @@ export function leaseStatusVariant(status: LeaseStatus): Variant {
       return 'red';
     case 'expired':
       return 'gray';
-    default:
-      return 'gray';
-  }
-}
-
-export function unitStatusVariant(status: UnitStatus): Variant {
-  switch (status) {
-    case 'occupied':
-      return 'green';
-    case 'vacant':
-      return 'blue';
-    case 'maintenance':
-      return 'yellow';
     default:
       return 'gray';
   }

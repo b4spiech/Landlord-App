@@ -17,7 +17,6 @@ import type {
   ParsedLeaseData,
   Property,
   Tenant,
-  Unit,
 } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api/v1';
@@ -85,13 +84,6 @@ export const propertyPhotoAPI = {
   remove: (propertyId: string) => api.delete(`/properties/${propertyId}/photo`),
 };
 
-export const unitAPI = {
-  list: (params?: { property_id?: string }) => data<Unit[]>(api.get('/units', { params })),
-  get: (id: string) => data<Unit>(api.get(`/units/${id}`)),
-  create: (body: Partial<Unit>) => data<Unit>(api.post('/units', body)),
-  update: (id: string, body: Partial<Unit>) => data<Unit>(api.patch(`/units/${id}`, body)),
-};
-
 export const tenantAPI = {
   list: () => data<Tenant[]>(api.get('/tenants')),
   get: (id: string) => data<Tenant>(api.get(`/tenants/${id}`)),
@@ -104,7 +96,7 @@ export interface LeaseCreateInput extends Partial<Lease> {
 }
 
 export const leaseAPI = {
-  list: (params?: { property_id?: string; unit_id?: string; status_filter?: string }) =>
+  list: (params?: { property_id?: string; status_filter?: string }) =>
     data<Lease[]>(api.get('/leases', { params })),
   get: (id: string) => data<LeaseDetail>(api.get(`/leases/${id}`)),
   create: (body: LeaseCreateInput) => data<LeaseDetail>(api.post('/leases', body)),
@@ -115,7 +107,6 @@ export const leaseAPI = {
 export interface CreateFromParsedBody {
   parsed: ParsedLeaseData;
   property_id: string;
-  unit_id: string;
   management_company_id?: string | null;
   jurisdiction_id?: string | null;
   document_id?: string | null;

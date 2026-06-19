@@ -60,7 +60,6 @@ def create_lease(payload: LeaseCreate, session: Session = Depends(get_session)):
 @router.get("", response_model=list[LeaseRead])
 def list_leases(
     property_id: Optional[uuid.UUID] = None,
-    unit_id: Optional[uuid.UUID] = None,
     status_filter: Optional[str] = None,
     skip: int = 0,
     limit: int = 100,
@@ -69,8 +68,6 @@ def list_leases(
     statement = select(Lease)
     if property_id is not None:
         statement = statement.where(Lease.property_id == property_id)
-    if unit_id is not None:
-        statement = statement.where(Lease.unit_id == unit_id)
     if status_filter is not None:
         statement = statement.where(Lease.status == status_filter)
     return session.exec(statement.offset(skip).limit(limit)).all()
@@ -170,7 +167,6 @@ def _create_from_parsed(session: Session, req: CreateFromParsedRequest) -> Creat
 
     lease_kwargs = {
         "property_id": uuid.UUID(req.property_id),
-        "unit_id": uuid.UUID(req.unit_id),
         "start_date": start,
         "end_date": end,
         "monthly_rent": parsed.lease.monthly_rent or 0.0,

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getErrorMessage, leaseAPI, propertyAPI, tenantAPI, unitAPI } from '../services/api';
-import type { LeaseStatus, Property, Tenant, Unit } from '../types';
+import { getErrorMessage, leaseAPI, propertyAPI, tenantAPI } from '../services/api';
+import type { LeaseStatus, Property, Tenant } from '../types';
 import { Field, NumberInput, Select, TextInput } from './FormFields';
 import { Button } from './ui';
 import { useToast } from './Toast';
@@ -21,11 +21,9 @@ interface Props {
 export const LeaseForm: React.FC<Props> = ({ onSaved, onCancel }) => {
   const toast = useToast();
   const [properties, setProperties] = useState<Property[]>([]);
-  const [units, setUnits] = useState<Unit[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
 
   const [propertyId, setPropertyId] = useState('');
-  const [unitId, setUnitId] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [rent, setRent] = useState<number | ''>('');
@@ -47,23 +45,6 @@ export const LeaseForm: React.FC<Props> = ({ onSaved, onCancel }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Reload units when the selected property changes.
-  useEffect(() => {
-    if (!propertyId) {
-      setUnits([]);
-      setUnitId('');
-      return;
-    }
-    unitAPI
-      .list({ property_id: propertyId })
-      .then((u) => {
-        setUnits(u);
-        setUnitId(u[0]?.id ?? '');
-      })
-      .catch((err) => toast.error(getErrorMessage(err)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [propertyId]);
-
   const toggleTenant = (id: string) => {
     setSelectedTenants((prev) => {
       const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
@@ -77,15 +58,10 @@ export const LeaseForm: React.FC<Props> = ({ onSaved, onCancel }) => {
     () => properties.map((p) => ({ value: p.id, label: p.name })),
     [properties],
   );
-  const unitOptions = useMemo(
-    () => units.map((u) => ({ value: u.id, label: `Unit ${u.unit_number}` })),
-    [units],
-  );
 
   const validate = (): boolean => {
     const e: Record<string, string> = {};
     if (!propertyId) e.propertyId = 'Select a property';
-    if (!unitId) e.unitId = 'Select a unit';
     if (!startDate) e.startDate = 'Start date is required';
     if (!endDate) e.endDate = 'End date is required';
     if (startDate && endDate && endDate < startDate) e.endDate = 'End date must be after start date';
@@ -100,7 +76,6 @@ export const LeaseForm: React.FC<Props> = ({ onSaved, onCancel }) => {
     try {
       await leaseAPI.create({
         property_id: propertyId,
-        unit_id: unitId,
         start_date: startDate,
         end_date: endDate,
         monthly_rent: rent === '' ? 0 : rent,
@@ -129,24 +104,14 @@ export const LeaseForm: React.FC<Props> = ({ onSaved, onCancel }) => {
       }}
       className="space-y-4"
     >
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Property" required error={errors.propertyId}>
-          <Select
-            value={propertyId}
-            onChange={setPropertyId}
-            options={propertyOptions}
-            placeholder="Select property…"
-          />
-        </Field>
-        <Field label="Unit" required error={errors.unitId}>
-          <Select
-            value={unitId}
-            onChange={setUnitId}
-            options={unitOptions}
-            placeholder={propertyId ? 'Select unit…' : 'Choose a property first'}
-          />
-        </Field>
-      </div>
+      <Field label="Property" required error={errors.propertyId}>
+        <Select
+          value={propertyId}
+          onChange={setPropertyId}
+          options={propertyOptions}
+          placeholder="Select property…"
+        />
+      </Field>
 
       <div className="grid grid-cols-2 gap-4">
         <Field label="Start date" required error={errors.startDate}>

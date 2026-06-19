@@ -5,7 +5,7 @@ from sqlalchemy import Column, LargeBinary
 from sqlmodel import Field
 
 from app.models.base import TimestampMixin
-from app.models.enums import PropertyType, UnitStatus
+from app.models.enums import PropertyType
 
 
 class Property(TimestampMixin, table=True):
@@ -33,22 +33,6 @@ class Property(TimestampMixin, table=True):
     bathrooms: Optional[float] = Field(default=None)
     square_feet: Optional[int] = Field(default=None)
     hoa_name: Optional[str] = Field(default=None, max_length=200)
-    notes: Optional[str] = Field(default=None)
-
-
-class Unit(TimestampMixin, table=True):
-    """A leasable space within a property."""
-
-    __tablename__ = "unit"
-
-    property_id: uuid.UUID = Field(foreign_key="property.id", index=True)
-    unit_number: str = Field(max_length=50, description="e.g. '60'")
-    status: str = Field(default=UnitStatus.vacant.value, max_length=30)
-
-    bedrooms: Optional[int] = Field(default=None)
-    bathrooms: Optional[float] = Field(default=None)
-    square_feet: Optional[int] = Field(default=None)
-    market_rent: Optional[float] = Field(default=None)
     notes: Optional[str] = Field(default=None)
 
 

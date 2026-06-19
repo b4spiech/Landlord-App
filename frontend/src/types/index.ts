@@ -15,7 +15,6 @@ export type PropertyType =
   | 'apartment'
   | 'commercial';
 
-export type UnitStatus = 'vacant' | 'occupied' | 'maintenance' | 'unavailable';
 
 export type LeaseStatus =
   | 'draft'
@@ -82,17 +81,6 @@ export interface Property extends Timestamped {
   bathrooms?: number | null;
   square_feet?: number | null;
   hoa_name?: string | null;
-  notes?: string | null;
-}
-
-export interface Unit extends Timestamped {
-  property_id: string;
-  unit_number: string;
-  status: UnitStatus;
-  bedrooms?: number | null;
-  bathrooms?: number | null;
-  square_feet?: number | null;
-  market_rent?: number | null;
   notes?: string | null;
 }
 
@@ -233,7 +221,6 @@ export interface Payment extends Timestamped {
 }
 
 export interface Lease extends Timestamped {
-  unit_id: string;
   property_id: string;
   status: LeaseStatus;
   start_date: string;

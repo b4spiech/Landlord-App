@@ -22,9 +22,8 @@ from app.models import (
     ManagementCompany,
     Owner,
     Property,
-    Unit,
 )
-from app.models.enums import PropertyType, TemplateType, UnitStatus
+from app.models.enums import PropertyType, TemplateType
 
 # --- Arizona early-termination / rental rules -------------------------------
 # References: Arizona Residential Landlord and Tenant Act (A.R.S. Title 33,
@@ -251,20 +250,7 @@ def seed() -> tuple[int, int]:
             prop.hoa_id = hoa.id
             session.add(prop)
 
-        # 5. Unit — Unit 60
-        _, made = _get_or_create(
-            session,
-            Unit,
-            defaults={
-                "status": UnitStatus.vacant.value,
-            },
-            property_id=prop.id,
-            unit_number="60",
-        )
-        created += made
-        skipped += not made
-
-        # 6. Templates
+        # Templates
         templates = [
             {
                 "name": "Buyout Options Email",

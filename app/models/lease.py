@@ -11,7 +11,6 @@ from app.models.enums import LeaseStatus
 class Lease(TimestampMixin, table=True):
     __tablename__ = "lease"
 
-    unit_id: uuid.UUID = Field(foreign_key="unit.id", index=True)
     property_id: uuid.UUID = Field(foreign_key="property.id", index=True)
 
     status: str = Field(default=LeaseStatus.draft.value, max_length=30, index=True)

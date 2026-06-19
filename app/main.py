@@ -16,7 +16,6 @@ from app.routers import (
     owners,
     properties,
     tenants,
-    units,
 )
 
 
@@ -58,7 +57,6 @@ app.include_router(management_companies.router, prefix="/api/v1")
 app.include_router(jurisdictions.router, prefix="/api/v1")
 app.include_router(hoas.router, prefix="/api/v1")
 app.include_router(properties.router, prefix="/api/v1")
-app.include_router(units.router, prefix="/api/v1")
 app.include_router(tenants.router, prefix="/api/v1")
 app.include_router(leases.router, prefix="/api/v1")
 

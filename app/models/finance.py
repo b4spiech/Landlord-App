@@ -31,7 +31,6 @@ class Expense(TimestampMixin, table=True):
     __tablename__ = "expense"
 
     property_id: uuid.UUID = Field(foreign_key="property.id", index=True)
-    unit_id: Optional[uuid.UUID] = Field(default=None, foreign_key="unit.id", index=True)
 
     category: str = Field(default=ExpenseCategory.maintenance.value, max_length=30)
     amount: float = Field()

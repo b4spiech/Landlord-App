@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { getErrorMessage, leaseImportAPI, propertyAPI, unitAPI } from '../services/api';
-import type { CreateLeaseResult, ParsedLease, ParsedLeaseData, ParsedTenant, Property, Unit } from '../types';
+import { getErrorMessage, leaseImportAPI, propertyAPI } from '../services/api';
+import type { CreateLeaseResult, ParsedLease, ParsedLeaseData, ParsedTenant, Property } from '../types';
 import { Button, Card } from './ui';
 import { Field, NumberInput, Select, Textarea, TextInput } from './FormFields';
 import { StatusBadge } from './StatusBadge';
@@ -39,27 +39,13 @@ export const LeaseReviewEditor: React.FC<Props> = ({ initial, documentId, onCrea
   const [lease, setLease] = useState<ParsedLease>(initial.lease ?? {});
 
   const [properties, setProperties] = useState<Property[]>([]);
-  const [units, setUnits] = useState<Unit[]>([]);
   const [propertyId, setPropertyId] = useState('');
-  const [unitId, setUnitId] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     propertyAPI.list().then(setProperties).catch((e) => toast.error(getErrorMessage(e)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  useEffect(() => {
-    if (!propertyId) {
-      setUnits([]);
-      setUnitId('');
-      return;
-    }
-    unitAPI.list({ property_id: propertyId }).then((u) => {
-      setUnits(u);
-      setUnitId(u[0]?.id ?? '');
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [propertyId]);
 
   const setLeaseField = <K extends keyof ParsedLease>(k: K, v: ParsedLease[K]) =>
     setLease((p) => ({ ...p, [k]: v }));
@@ -68,13 +54,11 @@ export const LeaseReviewEditor: React.FC<Props> = ({ initial, documentId, onCrea
 
   const submit = async () => {
     if (!propertyId) return toast.error('Select a property');
-    if (!unitId) return toast.error('Select a unit');
     if (!lease.start_date || !lease.end_date) return toast.error('Start and end dates are required');
     setSubmitting(true);
     const body = {
       parsed: { tenants, lease, confidence: initial.confidence, notes: initial.notes ?? null },
       property_id: propertyId,
-      unit_id: unitId,
       document_id: documentId ?? null,
     };
     try {
@@ -125,29 +109,22 @@ export const LeaseReviewEditor: React.FC<Props> = ({ initial, documentId, onCrea
         </div>
       )}
 
-      {/* Link to property/unit */}
+      {/* Link to property */}
       <Card className="p-5">
-        <h3 className="font-semibold text-gray-900 mb-3">Property &amp; Unit</h3>
-        <div className="grid sm:grid-cols-2 gap-4">
-          <Field label="Property" required>
-            <Select
-              value={propertyId}
-              onChange={setPropertyId}
-              options={properties.map((p) => ({ value: p.id, label: p.name }))}
-              placeholder="Select property…"
-            />
-          </Field>
-          <Field label="Unit" required>
-            <Select
-              value={unitId}
-              onChange={setUnitId}
-              options={units.map((u) => ({ value: u.id, label: `Unit ${u.unit_number}` }))}
-              placeholder={propertyId ? 'Select unit…' : 'Choose a property first'}
-            />
-          </Field>
-        </div>
+        <h3 className="font-semibold text-gray-900 mb-3">Property</h3>
+        <Field label="Property" required>
+          <Select
+            value={propertyId}
+            onChange={setPropertyId}
+            options={properties.map((p) => ({ value: p.id, label: p.name }))}
+            placeholder="Select property…"
+          />
+        </Field>
         {lease.property_address && (
-          <p className="text-xs text-gray-500 mt-2">Parsed address: {lease.property_address}{lease.unit_number ? `, Unit ${lease.unit_number}` : ''}</p>
+          <p className="text-xs text-gray-500 mt-2">
+            Parsed address: {lease.property_address}
+            {lease.unit_number ? `, Unit ${lease.unit_number}` : ''}
+          </p>
         )}
       </Card>
 

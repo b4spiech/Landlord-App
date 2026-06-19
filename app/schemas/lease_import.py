@@ -72,7 +72,6 @@ class ParsedLeaseData(BaseModel):
 class CreateFromParsedRequest(BaseModel):
     parsed: ParsedLeaseData
     property_id: str
-    unit_id: str
     management_company_id: Optional[str] = None
     jurisdiction_id: Optional[str] = None
     document_id: Optional[str] = None  # links the already-uploaded document

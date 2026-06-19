@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { leaseAPI, propertyAPI, unitAPI } from '../services/api';
+import { leaseAPI, propertyAPI, tenantAPI } from '../services/api';
 import { useAsync } from '../lib/useAsync';
 import { Card, ErrorState, PageHeader, Spinner } from '../components/ui';
 import { StatusBadge } from '../components/StatusBadge';
@@ -17,21 +17,20 @@ const StatCard = ({ label, value, to }: { label: string; value: string | number;
 
 export const Dashboard = () => {
   const { data, loading, error, reload } = useAsync(async () => {
-    const [properties, units, leases] = await Promise.all([
+    const [properties, tenants, leases] = await Promise.all([
       propertyAPI.list(),
-      unitAPI.list(),
+      tenantAPI.list(),
       leaseAPI.list(),
     ]);
-    return { properties, units, leases };
+    return { properties, tenants, leases };
   });
 
   if (loading) return <Spinner />;
   if (error) return <ErrorState message={error} onRetry={reload} />;
   if (!data) return null;
 
-  const { properties, units, leases } = data;
+  const { properties, tenants, leases } = data;
   const activeLeases = leases.filter((l) => l.status === 'active');
-  const vacantUnits = units.filter((u) => u.status === 'vacant');
   const monthlyRevenue = activeLeases.reduce((sum, l) => sum + (l.monthly_rent || 0), 0);
 
   return (
@@ -41,7 +40,7 @@ export const Dashboard = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard label="Properties" value={properties.length} to="/properties" />
         <StatCard label="Active Leases" value={activeLeases.length} to="/leases" />
-        <StatCard label="Vacant Units" value={vacantUnits.length} />
+        <StatCard label="Tenants" value={tenants.length} to="/tenants" />
         <StatCard label="Monthly Revenue" value={formatCurrency(monthlyRevenue)} />
       </div>
 
