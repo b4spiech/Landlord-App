@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { leaseAPI, leaseDocumentAPI } from '../services/api';
 import { useAsync } from '../lib/useAsync';
 import type { Lease } from '../types';
-import { Card, ErrorState, PageHeader, Spinner } from '../components/ui';
+import { Button, Card, ErrorState, PageHeader, Spinner } from '../components/ui';
+import { Modal } from '../components/Modal';
+import { LeaseEditForm } from '../components/LeaseEditForm';
 import { StatusBadge } from '../components/StatusBadge';
 import { formatCurrency, formatDate, leaseStatusVariant, titleCase } from '../lib/format';
 
@@ -17,6 +20,7 @@ const yesNo = (v?: boolean | null) => (v == null ? '—' : v ? 'Yes' : 'No');
 
 export const LeaseDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const [editOpen, setEditOpen] = useState(false);
   const { data, loading, error, reload } = useAsync(async () => {
     const lease = await leaseAPI.get(id!);
     const documents = await leaseDocumentAPI.list(id!);
@@ -67,7 +71,14 @@ export const LeaseDetail = () => {
       <PageHeader
         title={`${formatCurrency(lease.monthly_rent)}/mo lease`}
         subtitle={`${formatDate(lease.start_date)} → ${formatDate(lease.end_date)}`}
-        action={<StatusBadge status={lease.status} variant={leaseStatusVariant(lease.status)} />}
+        action={
+          <div className="flex items-center gap-3">
+            <StatusBadge status={lease.status} variant={leaseStatusVariant(lease.status)} />
+            <Button variant="secondary" onClick={() => setEditOpen(true)}>
+              Edit
+            </Button>
+          </div>
+        }
       />
 
       <div className="grid lg:grid-cols-2 gap-6 items-start">
@@ -153,6 +164,17 @@ export const LeaseDetail = () => {
           </Card>
         </div>
       </div>
+
+      <Modal open={editOpen} title="Edit Lease" onClose={() => setEditOpen(false)}>
+        <LeaseEditForm
+          lease={lease}
+          onSaved={() => {
+            setEditOpen(false);
+            reload();
+          }}
+          onCancel={() => setEditOpen(false)}
+        />
+      </Modal>
     </div>
   );
 };
