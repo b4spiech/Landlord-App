@@ -18,6 +18,7 @@ class PropertyBase(BaseModel):
     owner_id: uuid.UUID
     management_company_id: Optional[uuid.UUID] = None
     jurisdiction_id: uuid.UUID
+    hoa_id: Optional[uuid.UUID] = None
     year_built: Optional[int] = None
     bedrooms: Optional[int] = None
     bathrooms: Optional[float] = None
@@ -41,6 +42,7 @@ class PropertyUpdate(BaseModel):
     owner_id: Optional[uuid.UUID] = None
     management_company_id: Optional[uuid.UUID] = None
     jurisdiction_id: Optional[uuid.UUID] = None
+    hoa_id: Optional[uuid.UUID] = None
     year_built: Optional[int] = None
     bedrooms: Optional[int] = None
     bathrooms: Optional[float] = None

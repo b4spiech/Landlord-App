@@ -25,6 +25,7 @@ class Property(TimestampMixin, table=True):
         default=None, foreign_key="management_company.id", index=True
     )
     jurisdiction_id: uuid.UUID = Field(foreign_key="jurisdiction.id", index=True)
+    hoa_id: Optional[uuid.UUID] = Field(default=None, foreign_key="hoa.id", index=True)
 
     year_built: Optional[int] = Field(default=None)
     bedrooms: Optional[int] = Field(default=None)

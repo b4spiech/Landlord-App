@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react';
 import {
   getErrorMessage,
+  hoaAPI,
   jurisdictionAPI,
   managementCompanyAPI,
   ownerAPI,
   propertyAPI,
 } from '../services/api';
-import type { ManagementCompany, Owner, Property, PropertyType } from '../types';
+import type { HOA, ManagementCompany, Owner, Property, PropertyType } from '../types';
 import { Field, NumberInput, Select, Textarea, TextInput } from './FormFields';
 import { Button } from './ui';
 import { Modal } from './Modal';
 import { OwnerForm } from './OwnerForm';
 import { ManagementCompanyForm } from './ManagementCompanyForm';
+import { HOAForm } from './HOAForm';
 import { useToast } from './Toast';
 
 const PROPERTY_TYPES: { value: PropertyType; label: string }[] = [
@@ -34,6 +36,7 @@ export const PropertyForm: React.FC<Props> = ({ existing, onSaved, onCancel }) =
   const [owners, setOwners] = useState<{ value: string; label: string }[]>([]);
   const [companies, setCompanies] = useState<{ value: string; label: string }[]>([]);
   const [jurisdictions, setJurisdictions] = useState<{ value: string; label: string }[]>([]);
+  const [hoas, setHoas] = useState<{ value: string; label: string }[]>([]);
 
   const [name, setName] = useState(existing?.name ?? '');
   const [propertyType, setPropertyType] = useState<PropertyType>(existing?.property_type ?? 'condo');
@@ -45,7 +48,7 @@ export const PropertyForm: React.FC<Props> = ({ existing, onSaved, onCancel }) =
   const [ownerId, setOwnerId] = useState(existing?.owner_id ?? '');
   const [companyId, setCompanyId] = useState(existing?.management_company_id ?? '');
   const [jurisdictionId, setJurisdictionId] = useState(existing?.jurisdiction_id ?? '');
-  const [hoaName, setHoaName] = useState(existing?.hoa_name ?? '');
+  const [hoaId, setHoaId] = useState(existing?.hoa_id ?? '');
   const [bedrooms, setBedrooms] = useState<number | ''>(existing?.bedrooms ?? '');
   const [bathrooms, setBathrooms] = useState<number | ''>(existing?.bathrooms ?? '');
   const [notes, setNotes] = useState(existing?.notes ?? '');
@@ -54,6 +57,7 @@ export const PropertyForm: React.FC<Props> = ({ existing, onSaved, onCancel }) =
   const [submitting, setSubmitting] = useState(false);
   const [ownerModalOpen, setOwnerModalOpen] = useState(false);
   const [companyModalOpen, setCompanyModalOpen] = useState(false);
+  const [hoaModalOpen, setHoaModalOpen] = useState(false);
 
   const handleOwnerCreated = (o: Owner) => {
     setOwners((prev) => [...prev, { value: o.id, label: o.name }]);
@@ -65,13 +69,24 @@ export const PropertyForm: React.FC<Props> = ({ existing, onSaved, onCancel }) =
     setCompanyId(c.id);
     setCompanyModalOpen(false);
   };
+  const handleHOACreated = (h: HOA) => {
+    setHoas((prev) => [...prev, { value: h.id, label: h.name }]);
+    setHoaId(h.id);
+    setHoaModalOpen(false);
+  };
 
   useEffect(() => {
-    Promise.all([ownerAPI.list(), managementCompanyAPI.list(), jurisdictionAPI.list()])
-      .then(([o, c, j]) => {
+    Promise.all([
+      ownerAPI.list(),
+      managementCompanyAPI.list(),
+      jurisdictionAPI.list(),
+      hoaAPI.list(),
+    ])
+      .then(([o, c, j, h]) => {
         setOwners(o.map((x) => ({ value: x.id, label: x.name })));
         setCompanies(c.map((x) => ({ value: x.id, label: x.name })));
         setJurisdictions(j.map((x) => ({ value: x.id, label: x.name || x.state_name })));
+        setHoas(h.map((x) => ({ value: x.id, label: x.name })));
         // Sensible defaults when creating the first property.
         if (!existing) {
           if (o[0]) setOwnerId(o[0].id);
@@ -109,7 +124,7 @@ export const PropertyForm: React.FC<Props> = ({ existing, onSaved, onCancel }) =
       owner_id: ownerId,
       management_company_id: companyId || null,
       jurisdiction_id: jurisdictionId,
-      hoa_name: hoaName.trim() || null,
+      hoa_id: hoaId || null,
       bedrooms: bedrooms === '' ? null : bedrooms,
       bathrooms: bathrooms === '' ? null : bathrooms,
       notes: notes.trim() || null,
@@ -148,8 +163,15 @@ export const PropertyForm: React.FC<Props> = ({ existing, onSaved, onCancel }) =
             options={PROPERTY_TYPES}
           />
         </Field>
-        <Field label="HOA name" error={errors.hoaName}>
-          <TextInput value={hoaName} onChange={setHoaName} />
+        <Field label="HOA">
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <Select value={hoaId ?? ''} onChange={setHoaId} options={hoas} placeholder="None" />
+            </div>
+            <Button variant="secondary" onClick={() => setHoaModalOpen(true)}>
+              + New
+            </Button>
+          </div>
         </Field>
       </div>
 
@@ -243,6 +265,9 @@ export const PropertyForm: React.FC<Props> = ({ existing, onSaved, onCancel }) =
         onSaved={handleCompanyCreated}
         onCancel={() => setCompanyModalOpen(false)}
       />
+    </Modal>
+    <Modal open={hoaModalOpen} title="Add HOA" onClose={() => setHoaModalOpen(false)}>
+      <HOAForm onSaved={handleHOACreated} onCancel={() => setHoaModalOpen(false)} />
     </Modal>
     </>
   );

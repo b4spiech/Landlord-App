@@ -76,6 +76,7 @@ export interface Property extends Timestamped {
   owner_id: string;
   management_company_id?: string | null;
   jurisdiction_id: string;
+  hoa_id?: string | null;
   year_built?: number | null;
   bedrooms?: number | null;
   bathrooms?: number | null;
@@ -109,6 +110,35 @@ export interface Tenant extends Timestamped {
   emergency_contact_name?: string | null;
   emergency_contact_phone?: string | null;
   notes?: string | null;
+}
+
+export interface HOA extends Timestamped {
+  name: string;
+  contact_name?: string | null;
+  contact_email?: string | null;
+  contact_phone?: string | null;
+  website?: string | null;
+  management_company_name?: string | null;
+  address_line1?: string | null;
+  address_line2?: string | null;
+  city?: string | null;
+  state?: string | null;
+  postal_code?: string | null;
+  dues_amount?: number | null;
+  dues_frequency?: string | null;
+  notes?: string | null;
+}
+
+export interface HOADocument extends Timestamped {
+  hoa_id: string;
+  name: string;
+  doc_type: string;
+  filename?: string | null;
+  content_type?: string | null;
+  file_size?: number | null;
+  external_url?: string | null;
+  uploaded_at: string;
+  has_file: boolean;
 }
 
 export interface Payment extends Timestamped {

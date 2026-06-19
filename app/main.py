@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from app.config import settings
 from app.database import create_all_tables
 from app.routers import (
+    hoas,
     jurisdictions,
     leases,
     management_companies,
@@ -55,6 +56,7 @@ def root():
 app.include_router(owners.router, prefix="/api/v1")
 app.include_router(management_companies.router, prefix="/api/v1")
 app.include_router(jurisdictions.router, prefix="/api/v1")
+app.include_router(hoas.router, prefix="/api/v1")
 app.include_router(properties.router, prefix="/api/v1")
 app.include_router(units.router, prefix="/api/v1")
 app.include_router(tenants.router, prefix="/api/v1")

@@ -16,6 +16,7 @@ from sqlmodel import Session, select
 
 from app.database import create_all_tables, engine
 from app.models import (
+    HOA,
     Jurisdiction,
     LeaseTemplate,
     ManagementCompany,
@@ -210,6 +211,20 @@ def seed() -> tuple[int, int]:
         created += made
         skipped += not made
 
+        # 3b. HOA for the condo
+        hoa, made = _get_or_create(
+            session,
+            HOA,
+            defaults={
+                "city": "Tucson",
+                "state": "AZ",
+                "dues_frequency": "monthly",
+            },
+            name="Camino Pimeria Alta Condominium Association",
+        )
+        created += made
+        skipped += not made
+
         # 4. Property — 6255 N Camino Pimeria Alta Unit 60
         prop, made = _get_or_create(
             session,
@@ -224,11 +239,17 @@ def seed() -> tuple[int, int]:
                 "owner_id": owner.id,
                 "management_company_id": mgmt.id,
                 "jurisdiction_id": az.id,
+                "hoa_id": hoa.id,
             },
             address_line1="6255 N Camino Pimeria Alta",
         )
         created += made
         skipped += not made
+
+        # Backfill the HOA link on an already-seeded property (idempotent).
+        if prop.hoa_id is None:
+            prop.hoa_id = hoa.id
+            session.add(prop)
 
         # 5. Unit — Unit 60
         _, made = _get_or_create(

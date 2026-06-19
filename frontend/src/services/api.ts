@@ -2,6 +2,8 @@ import axios from 'axios';
 import type { AxiosResponse } from 'axios';
 import type {
   EmailApproval,
+  HOA,
+  HOADocument,
   Jurisdiction,
   Lease,
   LeaseBreakOption,
@@ -95,9 +97,31 @@ export const leaseAPI = {
     data<LeaseDetail>(api.patch(`/leases/${id}`, body)),
 };
 
-// Jurisdictions: no dedicated router yet; reserved for when it lands.
 export const jurisdictionAPI = {
   list: () => data<Jurisdiction[]>(api.get('/jurisdictions')),
+};
+
+export const hoaAPI = {
+  list: () => data<HOA[]>(api.get('/hoas')),
+  get: (id: string) => data<HOA>(api.get(`/hoas/${id}`)),
+  create: (body: Partial<HOA>) => data<HOA>(api.post('/hoas', body)),
+  update: (id: string, body: Partial<HOA>) => data<HOA>(api.patch(`/hoas/${id}`, body)),
+  remove: (id: string) => api.delete(`/hoas/${id}`),
+};
+
+export const hoaDocumentAPI = {
+  list: (hoaId: string) => data<HOADocument[]>(api.get(`/hoas/${hoaId}/documents`)),
+  upload: (hoaId: string, form: FormData) =>
+    data<HOADocument>(
+      api.post(`/hoas/${hoaId}/documents`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }),
+    ),
+  // Absolute path so a regular <a href> / window.open downloads through the
+  // same origin the SPA is served from.
+  downloadUrl: (hoaId: string, docId: string) =>
+    `${API_URL}/hoas/${hoaId}/documents/${docId}/download`,
+  remove: (hoaId: string, docId: string) => api.delete(`/hoas/${hoaId}/documents/${docId}`),
 };
 
 // ---------------------------------------------------------------------------
