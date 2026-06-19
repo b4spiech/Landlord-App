@@ -74,6 +74,17 @@ export const propertyAPI = {
     data<Property>(api.patch(`/properties/${id}`, body)),
 };
 
+export const propertyPhotoAPI = {
+  photoUrl: (propertyId: string) => `${API_URL}/properties/${propertyId}/photo`,
+  upload: (propertyId: string, form: FormData) =>
+    data<{ ok: boolean }>(
+      api.post(`/properties/${propertyId}/photo`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }),
+    ),
+  remove: (propertyId: string) => api.delete(`/properties/${propertyId}/photo`),
+};
+
 export const unitAPI = {
   list: (params?: { property_id?: string }) => data<Unit[]>(api.get('/units', { params })),
   get: (id: string) => data<Unit>(api.get(`/units/${id}`)),

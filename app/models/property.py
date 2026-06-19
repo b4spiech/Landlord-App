@@ -1,6 +1,7 @@
 import uuid
 from typing import Optional
 
+from sqlalchemy import Column, LargeBinary
 from sqlmodel import Field
 
 from app.models.base import TimestampMixin
@@ -49,3 +50,19 @@ class Unit(TimestampMixin, table=True):
     square_feet: Optional[int] = Field(default=None)
     market_rent: Optional[float] = Field(default=None)
     notes: Optional[str] = Field(default=None)
+
+
+class PropertyPhoto(TimestampMixin, table=True):
+    """A property photo. Bytes live in Postgres (the deploy disk is ephemeral).
+
+    Kept in its own table so listing/loading properties doesn't pull image
+    bytes into memory.
+    """
+
+    __tablename__ = "property_photo"
+
+    property_id: uuid.UUID = Field(foreign_key="property.id", index=True)
+    filename: Optional[str] = Field(default=None, max_length=255)
+    content_type: Optional[str] = Field(default=None, max_length=120)
+    file_size: Optional[int] = Field(default=None)
+    content: bytes = Field(sa_column=Column(LargeBinary, nullable=False))

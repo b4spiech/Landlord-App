@@ -5,6 +5,7 @@ import { useAsync } from '../lib/useAsync';
 import { Button, Card, ErrorState, PageHeader, Spinner } from '../components/ui';
 import { Modal } from '../components/Modal';
 import { PropertyForm } from '../components/PropertyForm';
+import { PropertyPhotoCard } from '../components/PropertyPhotoCard';
 import { StatusBadge } from '../components/StatusBadge';
 import { formatCurrency, formatDate, leaseStatusVariant, propertyTypeLabel } from '../lib/format';
 
@@ -42,9 +43,11 @@ export const PropertyDetail = () => {
         }
       />
 
+      <div className="grid lg:grid-cols-2 gap-6 items-start">
+       <div className="space-y-6">
       <Card className="p-5">
         <h2 className="font-semibold text-gray-900 mb-3">Details</h2>
-        <dl className="text-sm grid sm:grid-cols-2 gap-x-8 gap-y-2">
+        <dl className="text-sm space-y-2">
           <div className="flex justify-between">
             <dt className="text-gray-500">Type</dt>
             <dd>{propertyTypeLabel(property.property_type)}</dd>
@@ -73,7 +76,7 @@ export const PropertyDetail = () => {
       </Card>
 
       {hoa && (
-        <Card className="mt-6">
+        <Card>
           <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
             <h2 className="font-semibold text-gray-900">HOA — {hoa.name}</h2>
             <Link to={`/hoas/${hoa.id}`} className="text-sm text-blue-600 hover:underline">
@@ -127,7 +130,7 @@ export const PropertyDetail = () => {
         </Card>
       )}
 
-      <Card className="mt-6">
+      <Card>
         <div className="px-5 py-4 border-b border-gray-200">
           <h2 className="font-semibold text-gray-900">Leases ({leases.length})</h2>
         </div>
@@ -154,6 +157,10 @@ export const PropertyDetail = () => {
           })}
         </div>
       </Card>
+       </div>
+
+        <PropertyPhotoCard propertyId={property.id} />
+      </div>
 
       <Modal open={editOpen} title="Edit Property" onClose={() => setEditOpen(false)}>
         <PropertyForm

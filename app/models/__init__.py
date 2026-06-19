@@ -16,7 +16,7 @@ from app.models.lease_break import (
     LeaseBreakRequest,
 )
 from app.models.organization import ManagementCompany, Owner
-from app.models.property import Property, Unit
+from app.models.property import Property, PropertyPhoto, Unit
 from app.models.template import LeaseTemplate
 from app.models.tenant import Tenant
 
@@ -25,6 +25,7 @@ __all__ = [
     "Owner",
     "ManagementCompany",
     "Property",
+    "PropertyPhoto",
     "Unit",
     "Tenant",
     "Lease",
