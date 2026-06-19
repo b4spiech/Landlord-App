@@ -31,11 +31,14 @@ function monthsRemaining(endDate: string): number {
   return Math.max(0, months);
 }
 
-export const LeaseBreakWorkflow: React.FC<{ leases: Lease[] }> = ({ leases }) => {
+export const LeaseBreakWorkflow: React.FC<{ leases: Lease[]; initialLeaseId?: string }> = ({
+  leases,
+  initialLeaseId = '',
+}) => {
   const toast = useToast();
   const [step, setStep] = useState(0);
 
-  const [leaseId, setLeaseId] = useState('');
+  const [leaseId, setLeaseId] = useState(initialLeaseId);
   const [moveOutDate, setMoveOutDate] = useState('');
   const [reason, setReason] = useState('');
 

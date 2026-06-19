@@ -1,9 +1,12 @@
+import { useSearchParams } from 'react-router-dom';
 import { leaseAPI } from '../services/api';
 import { useAsync } from '../lib/useAsync';
 import { ErrorState, PageHeader, Spinner } from '../components/ui';
 import { LeaseBreakWorkflow } from '../components/LeaseBreakWorkflow';
 
 export const LeaseBreakPage = () => {
+  const [searchParams] = useSearchParams();
+  const initialLeaseId = searchParams.get('lease') ?? '';
   const { data, loading, error, reload } = useAsync(() => leaseAPI.list());
 
   return (
@@ -18,7 +21,7 @@ export const LeaseBreakPage = () => {
 
       {loading && <Spinner />}
       {error && <ErrorState message={error} onRetry={reload} />}
-      {data && <LeaseBreakWorkflow leases={data} />}
+      {data && <LeaseBreakWorkflow leases={data} initialLeaseId={initialLeaseId} />}
     </div>
   );
 };

@@ -75,8 +75,11 @@ export const LeaseDetail = () => {
         title={`${formatCurrency(lease.monthly_rent)}/mo lease`}
         subtitle={`${formatDate(lease.start_date)} → ${formatDate(lease.end_date)}`}
         action={
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <StatusBadge status={lease.status} variant={leaseStatusVariant(lease.status)} />
+            <Link to={`/lease-breaks?lease=${lease.id}`}>
+              <Button variant="secondary">Break Lease</Button>
+            </Link>
             <Button variant="secondary" onClick={() => setEditOpen(true)}>
               Edit
             </Button>
