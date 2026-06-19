@@ -15,6 +15,7 @@ export const TenantForm: React.FC<Props> = ({ existing, onSaved, onCancel }) => 
   const toast = useToast();
   const [firstName, setFirstName] = useState(existing?.first_name ?? '');
   const [lastName, setLastName] = useState(existing?.last_name ?? '');
+  const [preferredName, setPreferredName] = useState(existing?.preferred_name ?? '');
   const [email, setEmail] = useState(existing?.email ?? '');
   const [phone, setPhone] = useState(existing?.phone ?? '');
   const [emName, setEmName] = useState(existing?.emergency_contact_name ?? '');
@@ -37,6 +38,7 @@ export const TenantForm: React.FC<Props> = ({ existing, onSaved, onCancel }) => 
     const body = {
       first_name: firstName.trim(),
       last_name: lastName.trim(),
+      preferred_name: preferredName.trim() || null,
       email: email.trim() || null,
       phone: phone.trim() || null,
       emergency_contact_name: emName.trim() || null,
@@ -71,6 +73,9 @@ export const TenantForm: React.FC<Props> = ({ existing, onSaved, onCancel }) => 
           <TextInput value={lastName} onChange={setLastName} />
         </Field>
       </div>
+      <Field label="Preferred name">
+        <TextInput value={preferredName} onChange={setPreferredName} placeholder="e.g. Doug" />
+      </Field>
       <div className="grid grid-cols-2 gap-4">
         <Field label="Email" error={errors.email}>
           <TextInput type="email" value={email} onChange={setEmail} />

@@ -8,6 +8,7 @@ from app.schemas.common import TimestampedRead
 class TenantBase(BaseModel):
     first_name: str
     last_name: str
+    preferred_name: Optional[str] = None
     email: Optional[str] = None
     phone: Optional[str] = None
     date_of_birth: Optional[str] = None
@@ -37,6 +38,7 @@ class TenantCreate(TenantBase):
 class TenantUpdate(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    preferred_name: Optional[str] = None
     email: Optional[str] = None
     phone: Optional[str] = None
     date_of_birth: Optional[str] = None

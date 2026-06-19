@@ -12,6 +12,7 @@ class Tenant(TimestampMixin, table=True):
 
     first_name: str = Field(max_length=100)
     last_name: str = Field(index=True, max_length=100)
+    preferred_name: Optional[str] = Field(default=None, max_length=100)
     email: Optional[str] = Field(default=None, max_length=255, index=True)
     phone: Optional[str] = Field(default=None, max_length=30)
 

@@ -6,7 +6,9 @@ import type { Lease } from '../types';
 import { Button, Card, ErrorState, PageHeader, Spinner } from '../components/ui';
 import { Modal } from '../components/Modal';
 import { LeaseEditForm } from '../components/LeaseEditForm';
+import { TenantForm } from '../components/TenantForm';
 import { StatusBadge } from '../components/StatusBadge';
+import type { Tenant } from '../types';
 import { formatCurrency, formatDate, leaseStatusVariant, titleCase } from '../lib/format';
 
 function humanSize(bytes?: number | null): string {
@@ -21,6 +23,7 @@ const yesNo = (v?: boolean | null) => (v == null ? '—' : v ? 'Yes' : 'No');
 export const LeaseDetail = () => {
   const { id } = useParams<{ id: string }>();
   const [editOpen, setEditOpen] = useState(false);
+  const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
   const { data, loading, error, reload } = useAsync(async () => {
     const lease = await leaseAPI.get(id!);
     const documents = await leaseDocumentAPI.list(id!);
@@ -120,13 +123,22 @@ export const LeaseDetail = () => {
                 <p className="px-5 py-6 text-sm text-gray-500">No tenants.</p>
               )}
               {lease.tenants.map((t) => (
-                <div key={t.id} className="px-5 py-3">
-                  <p className="font-medium text-gray-900">
-                    {t.first_name} {t.last_name}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    {[t.email, t.phone].filter(Boolean).join(' · ') || '—'}
-                  </p>
+                <div key={t.id} className="flex items-start justify-between px-5 py-3">
+                  <div>
+                    <p className="font-medium text-gray-900">
+                      {t.first_name} {t.last_name}
+                      {t.preferred_name ? ` (${t.preferred_name})` : ''}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {[t.email, t.phone].filter(Boolean).join(' · ') || '—'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setEditingTenant(t)}
+                    className="text-sm font-medium text-blue-600 hover:underline"
+                  >
+                    Edit
+                  </button>
                 </div>
               ))}
             </div>
@@ -174,6 +186,23 @@ export const LeaseDetail = () => {
           }}
           onCancel={() => setEditOpen(false)}
         />
+      </Modal>
+
+      <Modal
+        open={editingTenant !== null}
+        title="Edit Tenant"
+        onClose={() => setEditingTenant(null)}
+      >
+        {editingTenant && (
+          <TenantForm
+            existing={editingTenant}
+            onSaved={() => {
+              setEditingTenant(null);
+              reload();
+            }}
+            onCancel={() => setEditingTenant(null)}
+          />
+        )}
       </Modal>
     </div>
   );

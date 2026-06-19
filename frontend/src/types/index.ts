@@ -99,6 +99,7 @@ export interface Unit extends Timestamped {
 export interface Tenant extends Timestamped {
   first_name: string;
   last_name: string;
+  preferred_name?: string | null;
   email?: string | null;
   phone?: string | null;
   date_of_birth?: string | null;
