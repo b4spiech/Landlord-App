@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { hoaAPI, leaseAPI, propertyAPI, unitAPI } from '../services/api';
 import { useAsync } from '../lib/useAsync';
-import { Card, ErrorState, PageHeader, Spinner } from '../components/ui';
+import { Button, Card, ErrorState, PageHeader, Spinner } from '../components/ui';
+import { Modal } from '../components/Modal';
+import { PropertyForm } from '../components/PropertyForm';
 import { StatusBadge } from '../components/StatusBadge';
 import {
   formatCurrency,
@@ -13,6 +16,7 @@ import {
 
 export const PropertyDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const [editOpen, setEditOpen] = useState(false);
   const { data, loading, error, reload } = useAsync(async () => {
     const property = await propertyAPI.get(id!);
     const [units, leases] = await Promise.all([
@@ -37,6 +41,11 @@ export const PropertyDetail = () => {
       <PageHeader
         title={property.name}
         subtitle={`${property.address_line1}${property.address_line2 ? ', ' + property.address_line2 : ''}, ${property.city}, ${property.state} ${property.postal_code}`}
+        action={
+          <Button variant="secondary" onClick={() => setEditOpen(true)}>
+            Edit
+          </Button>
+        }
       />
 
       <div className="grid lg:grid-cols-3 gap-6">
@@ -165,6 +174,17 @@ export const PropertyDetail = () => {
           ))}
         </div>
       </Card>
+
+      <Modal open={editOpen} title="Edit Property" onClose={() => setEditOpen(false)}>
+        <PropertyForm
+          existing={property}
+          onSaved={() => {
+            setEditOpen(false);
+            reload();
+          }}
+          onCancel={() => setEditOpen(false)}
+        />
+      </Modal>
     </div>
   );
 };
