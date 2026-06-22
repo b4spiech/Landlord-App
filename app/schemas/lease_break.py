@@ -37,6 +37,23 @@ class RouteForSignatureResult(BaseModel):
     status: str = "sent"
 
 
+class EmailPreviewResponse(BaseModel):
+    subject: str
+    body_html: str
+    to_emails: list[str]
+    configured: bool
+
+
+class SendEmailRequest(BaseModel):
+    option_id: str
+    attach_document_id: Optional[str] = None
+
+
+class SendEmailResult(BaseModel):
+    sent: bool
+    to_emails: list[str]
+
+
 class LeaseBreakOptionRead(TimestampedRead):
     lease_break_request_id: uuid.UUID
     option_number: int

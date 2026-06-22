@@ -6,6 +6,7 @@ from sqlmodel import Session, select
 
 from app.database import get_session
 from app.models import (
+    EmailApproval,
     Lease,
     LeaseBreakDocument,
     LeaseBreakOption,
@@ -15,10 +16,11 @@ from app.models import (
     Property,
     Tenant,
 )
-from app.models.enums import DocumentStatus, DocumentType, LeaseBreakStatus
+from app.models.enums import DocumentStatus, DocumentType, EmailApprovalStatus, LeaseBreakStatus
 from app.routers.crud import get_or_404
 from app.schemas.lease_break import (
     CalculateOptionsRequest,
+    EmailPreviewResponse,
     GenerateAgreementRequest,
     InitiateLeaseBreakRequest,
     LeaseBreakDetail,
@@ -28,9 +30,12 @@ from app.schemas.lease_break import (
     RouteForSignatureRequest,
     RouteForSignatureResult,
     SelectOptionRequest,
+    SendEmailRequest,
+    SendEmailResult,
 )
-from app.services import docusign_service
+from app.services import docusign_service, email_service
 from app.services.docusign_service import DocuSignError, EnvelopeSigner
+from app.services.email_service import EmailError
 from app.services.lease_break_calculator import LeaseBreakCalculator
 from app.services.lease_break_documents import build_buyout_agreement_pdf
 
@@ -300,16 +305,93 @@ def list_documents(request_id: uuid.UUID, session: Session = Depends(get_session
 
 @router.get("/{request_id}/documents/{document_id}/download")
 def download_document(
-    request_id: uuid.UUID, document_id: uuid.UUID, session: Session = Depends(get_session)
+    request_id: uuid.UUID,
+    document_id: uuid.UUID,
+    inline: bool = False,
+    session: Session = Depends(get_session),
 ):
     doc = session.get(LeaseBreakDocument, document_id)
     if doc is None or doc.lease_break_request_id != request_id or doc.content is None:
         raise HTTPException(status_code=404, detail="Document not found")
+    # inline=true lets the browser render it in an <iframe> preview.
+    disposition = "inline" if inline else "attachment"
     return Response(
         content=doc.content,
         media_type=doc.file_type or "application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="{doc.file_name}"'},
+        headers={"Content-Disposition": f'{disposition}; filename="{doc.file_name}"'},
     )
+
+
+def _email_context(session: Session, req: LeaseBreakRequest, option_id: str):
+    option = session.get(LeaseBreakOption, uuid.UUID(option_id))
+    if option is None or option.lease_break_request_id != req.id:
+        raise HTTPException(status_code=404, detail="Option not found")
+    lease = get_or_404(session, Lease, req.lease_id, "Lease")
+    prop = session.get(Property, lease.property_id)
+    owner = session.get(Owner, prop.owner_id) if prop else None
+    tenants = _tenants_for_lease(session, lease.id)
+    return option, prop, owner, tenants
+
+
+@router.get("/{request_id}/email-preview", response_model=EmailPreviewResponse)
+def email_preview(
+    request_id: uuid.UUID, option_id: str, session: Session = Depends(get_session)
+):
+    """Preview the notification email. Read-only — never sends anything."""
+    req = get_or_404(session, LeaseBreakRequest, request_id, "Lease break request")
+    option, prop, owner, tenants = _email_context(session, req, option_id)
+    subject, body_html, to_emails = email_service.build_lease_break_email(option, prop, owner, tenants)
+    return EmailPreviewResponse(
+        subject=subject,
+        body_html=body_html,
+        to_emails=to_emails,
+        configured=email_service.is_configured(),
+    )
+
+
+@router.post("/{request_id}/send-email", response_model=SendEmailResult)
+async def send_email(
+    request_id: uuid.UUID, body: SendEmailRequest, session: Session = Depends(get_session)
+):
+    """Explicit approve-and-send: only this endpoint actually emails the tenants."""
+    req = get_or_404(session, LeaseBreakRequest, request_id, "Lease break request")
+    option, prop, owner, tenants = _email_context(session, req, body.option_id)
+    subject, body_html, to_emails = email_service.build_lease_break_email(option, prop, owner, tenants)
+    if not to_emails:
+        raise HTTPException(status_code=422, detail="No tenant email addresses on file.")
+
+    attachments = []
+    doc = None
+    if body.attach_document_id:
+        doc = session.get(LeaseBreakDocument, uuid.UUID(body.attach_document_id))
+    else:
+        doc = session.exec(
+            select(LeaseBreakDocument)
+            .where(LeaseBreakDocument.lease_break_request_id == request_id)
+            .order_by(LeaseBreakDocument.created_at.desc())
+        ).first()
+    if doc is not None and doc.content is not None:
+        attachments.append((doc.file_name, doc.content, doc.file_type or "application/pdf"))
+
+    try:
+        await email_service.send_email(to_emails, subject, body_html, attachments)
+    except EmailError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    session.add(
+        EmailApproval(
+            lease_break_request_id=request_id,
+            status=EmailApprovalStatus.sent.value,
+            to_emails=to_emails,
+            subject=subject,
+            body_html=body_html,
+            sent_at=datetime.now(),
+        )
+    )
+    req.status = LeaseBreakStatus.email_sent.value
+    session.add(req)
+    session.commit()
+    return SendEmailResult(sent=True, to_emails=to_emails)
 
 
 @router.post("/{request_id}/route-for-signature", response_model=RouteForSignatureResult)

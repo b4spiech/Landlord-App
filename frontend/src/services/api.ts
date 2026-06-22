@@ -179,6 +179,14 @@ export const leaseBreakAPI = {
     data<{ envelope_id: string; status: string }>(
       api.post(`/lease-breaks/${requestId}/route-for-signature`, body),
     ),
+  emailPreview: (requestId: string, optionId: string) =>
+    data<{ subject: string; body_html: string; to_emails: string[]; configured: boolean }>(
+      api.get(`/lease-breaks/${requestId}/email-preview`, { params: { option_id: optionId } }),
+    ),
+  sendEmail: (requestId: string, body: { option_id: string; attach_document_id?: string }) =>
+    data<{ sent: boolean; to_emails: string[] }>(
+      api.post(`/lease-breaks/${requestId}/send-email`, body),
+    ),
 };
 
 export const emailApprovalAPI = {
