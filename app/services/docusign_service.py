@@ -52,12 +52,14 @@ def _authenticated_client():
     client = ApiClient()
     client.set_base_path(settings.DOCUSIGN_BASE_URL)
     client.set_oauth_host_name(settings.DOCUSIGN_OAUTH_HOST)
+    # Railway/env stores often escape newlines; restore a valid PEM.
+    private_key = settings.DOCUSIGN_PRIVATE_KEY.replace("\\n", "\n").strip()
     try:
         token = client.request_jwt_user_token(
             client_id=_integration_key(),
             user_id=settings.DOCUSIGN_USER_ID,
             oauth_host_name=settings.DOCUSIGN_OAUTH_HOST,
-            private_key_bytes=settings.DOCUSIGN_PRIVATE_KEY.encode("utf-8"),
+            private_key_bytes=private_key.encode("utf-8"),
             expires_in=3600,
             scopes=["signature", "impersonation"],
         )
