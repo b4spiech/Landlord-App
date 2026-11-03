@@ -27,11 +27,29 @@ export const TourRequestDetail = () => {
 
   const rows: [string, React.ReactNode][] = [
     ['When', <strong key="w">{r.when_display}</strong>],
-    ['Home', <Link key="h" to={`/properties/${r.property_id}`} className="text-blue-600 hover:underline">{r.property_name}</Link>],
+    [
+      'Home',
+      <Link key="h" to={`/properties/${r.property_id}`} className="text-blue-600 hover:underline">
+        {r.property_name}
+      </Link>,
+    ],
     ['Address', r.property_address],
-    ['Phone', <a key="p" href={`tel:${r.phone}`} className="text-blue-600 hover:underline">{formatPhone(r.phone)}</a>],
-    ['Email', <a key="e" href={`mailto:${r.email}`} className="text-blue-600 hover:underline">{r.email}</a>],
-    ['Texts OK', r.sms_consent ? `Yes (agreed ${fmtDateTime(r.sms_consent_at)})` : 'No — email only'],
+    [
+      'Phone',
+      <a key="p" href={`tel:${r.phone}`} className="text-blue-600 hover:underline">
+        {formatPhone(r.phone)}
+      </a>,
+    ],
+    [
+      'Email',
+      <a key="e" href={`mailto:${r.email}`} className="text-blue-600 hover:underline">
+        {r.email}
+      </a>,
+    ],
+    [
+      'Texts OK',
+      r.sms_consent ? `Yes (agreed ${fmtDateTime(r.sms_consent_at)})` : 'No — email only',
+    ],
     ['Submitted', fmtDateTime(r.created_at)],
   ];
 
@@ -61,6 +79,34 @@ export const TourRequestDetail = () => {
               ))}
             </dl>
           </Card>
+
+          {r.feedback && (
+            <Card className="p-5">
+              <h2 className="font-semibold text-gray-900 mb-3">Feedback</h2>
+              <p className="text-lg text-amber-500" aria-label={`${r.feedback.rating} out of 5`}>
+                {'★'.repeat(r.feedback.rating)}
+                <span className="text-gray-300">{'★'.repeat(5 - r.feedback.rating)}</span>
+                <span className="ml-2 text-sm text-gray-700">{r.feedback.rating}/5</span>
+              </p>
+              <p className="mt-1 text-sm">
+                Interested in applying:{' '}
+                <strong>{{ yes: 'Yes', maybe: 'Maybe', no: 'No' }[r.feedback.interested]}</strong>
+              </p>
+              {r.feedback.liked && (
+                <p className="mt-3 text-sm">
+                  <span className="text-gray-500">Liked:</span> {r.feedback.liked}
+                </p>
+              )}
+              {r.feedback.concerns && (
+                <p className="mt-2 text-sm">
+                  <span className="text-gray-500">Concerns:</span> {r.feedback.concerns}
+                </p>
+              )}
+              <p className="mt-3 text-xs text-gray-500">
+                Received {fmtDateTime(r.feedback.created_at)}
+              </p>
+            </Card>
+          )}
 
           <Card>
             <div className="px-5 py-4 border-b border-gray-200">

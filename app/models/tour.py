@@ -51,6 +51,14 @@ class TourRequest(TimestampMixin, table=True):
     decision_note: Optional[str] = Field(default=None)
     # When the door code was last sent (manually or by the scheduler).
     code_sent_at: Optional[datetime] = Field(default=None, sa_type=DateTime(timezone=True))
+    # Scheduler bookkeeping for automatic code sends (retries + landlord alert).
+    code_send_attempts: int = Field(default=0, sa_column_kwargs={"server_default": "0"})
+    code_last_attempt_at: Optional[datetime] = Field(default=None, sa_type=DateTime(timezone=True))
+
+    # After the tour: marked completed, and a private feedback link is sent.
+    completed_at: Optional[datetime] = Field(default=None, sa_type=DateTime(timezone=True))
+    feedback_token: Optional[str] = Field(default=None, max_length=64, unique=True, index=True)
+    feedback_requested_at: Optional[datetime] = Field(default=None, sa_type=DateTime(timezone=True))
 
     # Photo ID retention: deleted after this time (30 days after the tour).
     id_photo_delete_after: datetime = Field(sa_type=DateTime(timezone=True))
@@ -81,3 +89,15 @@ class NotificationLog(TimestampMixin, table=True):
     recipient: str = Field(max_length=254)
     status: str = Field(max_length=20)  # sent | failed | skipped
     detail: Optional[str] = Field(default=None)  # provider id or error / skip reason
+
+
+class TourFeedback(TimestampMixin, table=True):
+    """What the visitor thought, submitted through their private feedback link."""
+
+    __tablename__ = "tour_feedback"
+
+    tour_request_id: uuid.UUID = Field(foreign_key="tour_request.id", index=True, unique=True)
+    rating: int  # 1-5
+    interested: str = Field(max_length=10)  # yes | maybe | no
+    liked: Optional[str] = Field(default=None, max_length=2000)
+    concerns: Optional[str] = Field(default=None, max_length=2000)

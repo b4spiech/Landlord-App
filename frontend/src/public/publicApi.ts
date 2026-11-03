@@ -26,6 +26,19 @@ export const publicApi = {
     get<{ time_zone: string; date: string; slots: Slot[] }>(
       `/listings/${listingId}/availability?day=${encodeURIComponent(day)}`,
     ),
+  feedbackInfo: (token: string) =>
+    get<{ first_name: string; home: string; when: string; submitted: boolean }>(
+      `/feedback/${encodeURIComponent(token)}`,
+    ),
+  submitFeedback: (
+    token: string,
+    body: { rating: number; interested: 'yes' | 'maybe' | 'no'; liked?: string; concerns?: string },
+  ) =>
+    fetch(`${BASE}/feedback/${encodeURIComponent(token)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }).then((r) => parse<{ ok: boolean }>(r)),
   submitTourRequest: (form: FormData) =>
     fetch(`${BASE}/tour-requests`, { method: 'POST', body: form }).then((r) =>
       parse<{ ok: boolean; when?: string }>(r),

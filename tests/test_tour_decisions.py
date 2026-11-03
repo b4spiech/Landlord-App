@@ -12,7 +12,7 @@ from zoneinfo import ZoneInfo
 from app.config import settings
 from app.database import engine
 from app.main import app
-from app.models import AccessCode, Listing, ListingPhoto, NotificationLog, Property, TourIdPhoto, TourRequest
+from app.models import TourFeedback, AccessCode, Listing, ListingPhoto, NotificationLog, Property, TourIdPhoto, TourRequest
 from app.routers import public_tours
 from app.seed import seed
 from app.services import email_service, sms_service, tour_notifications
@@ -24,7 +24,7 @@ AZ = ZoneInfo("America/Phoenix")
 
 def _clear():
     with Session(engine) as s:
-        for model in (AccessCode, NotificationLog, TourIdPhoto, TourRequest, ListingPhoto, Listing):
+        for model in (TourFeedback, AccessCode, NotificationLog, TourIdPhoto, TourRequest, ListingPhoto, Listing):
             s.exec(delete(model))
         s.commit()
 

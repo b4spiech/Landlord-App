@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from sqlmodel import Session, select
 
 from app.database import get_session
-from app.models import AccessCode, NotificationLog, Property, TourIdPhoto, TourRequest
+from app.models import AccessCode, NotificationLog, Property, TourFeedback, TourIdPhoto, TourRequest
 from app.models.enums import TourRequestStatus
 from app.routers.crud import get_or_404
 from app.services import tour_notifications
@@ -46,6 +46,22 @@ class TourRequestRead(BaseModel):
     access_code: Optional[str] = None
     access_code_status: Optional[str] = None  # reserved | issued
     code_sent_at: Optional[datetime] = None
+    code_send_attempts: int = 0
+    completed_at: Optional[datetime] = None
+    feedback_requested_at: Optional[datetime] = None
+    id_photo_deleted_at: Optional[datetime] = None
+    feedback: Optional["FeedbackRead"] = None
+
+
+class FeedbackRead(BaseModel):
+    created_at: datetime
+    rating: int
+    interested: str
+    liked: Optional[str] = None
+    concerns: Optional[str] = None
+
+
+TourRequestRead.model_rebuild()
 
 
 class DecisionIn(BaseModel):
@@ -69,13 +85,15 @@ def _read(session: Session, req: TourRequest, prop: Property) -> TourRequestRead
     code: Optional[AccessCode] = code_for_tour(session, req)
     unit = f", {prop.address_line2}" if prop.address_line2 else ""
     return TourRequestRead(
-        **req.model_dump(exclude={"updated_at", "user_agent", "id_photo_deleted_at"}),
+        **req.model_dump(exclude={"updated_at", "user_agent", "feedback_token", "code_last_attempt_at"}),
         property_name=prop.name,
         property_address=f"{prop.address_line1}{unit}, {prop.city}, {prop.state}",
         when_display=fmt_for_landlord(req.tour_start, req.time_zone),
         has_id_photo=has_photo,
         access_code=code.code if code else None,
         access_code_status=code.status if code else None,
+        feedback=fb.model_dump() if (fb := session.exec(
+            select(TourFeedback).where(TourFeedback.tour_request_id == req.id)).first()) else None,
     )
 
 

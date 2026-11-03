@@ -59,6 +59,11 @@ class Settings(BaseSettings):
     # Base URL of the landlord app, for links in landlord notifications.
     LANDLORD_APP_URL: str = "https://dev-app.apexelementgrp.com"
 
+    # Background jobs (door codes 30 min before tours, feedback requests, photo
+    # ID deletion). Turn off only for tests or one-off scripts.
+    SCHEDULER_ENABLED: bool = True
+    SCHEDULER_INTERVAL_SECONDS: int = 60
+
     # --- Notifications ------------------------------------------------------
     # Where new tour requests are announced. Email falls back to the first
     # CF_ACCESS_ALLOWED_EMAILS address when unset.

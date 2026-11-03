@@ -21,7 +21,7 @@ from app.models.organization import ManagementCompany, Owner
 from app.models.property import Property, PropertyPhoto
 from app.models.template import LeaseTemplate
 from app.models.tenant import Tenant
-from app.models.tour import NotificationLog, TourIdPhoto, TourRequest
+from app.models.tour import NotificationLog, TourFeedback, TourIdPhoto, TourRequest
 
 __all__ = [
     "Jurisdiction",
@@ -48,4 +48,5 @@ __all__ = [
     "TourIdPhoto",
     "NotificationLog",
     "AccessCode",
+    "TourFeedback",
 ]

@@ -11,17 +11,19 @@ import time as _time
 import uuid
 from collections import defaultdict, deque
 from datetime import date, datetime, time, timedelta, timezone
+from typing import Literal, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Request, UploadFile
+from pydantic import BaseModel, Field
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from app.database import get_session
-from app.models import Listing, Property, TourIdPhoto, TourRequest
+from app.models import Listing, Property, TourFeedback, TourIdPhoto, TourRequest
 from app.models.enums import ACTIVE_TOUR_STATUSES, ListingStatus
 from app.services.sms_service import normalize_us_phone
 from app.services.timezones import property_time_zone
-from app.services.tour_notifications import notify_tour_request_submitted
+from app.services.tour_notifications import notify_landlord_feedback, notify_tour_request_submitted
 from app.services.tour_scheduling import (
     ID_PHOTO_RETENTION,
     SLOT_TIMES,
@@ -196,3 +198,50 @@ async def submit_tour_request(
 
     background.add_task(notify_tour_request_submitted, req.id)
     return {"ok": True, "when": fmt_local(start_utc, tz)}
+
+
+# --- Post-tour feedback (private link sent after the tour) ----------------------
+
+
+class FeedbackIn(BaseModel):
+    rating: int = Field(..., ge=1, le=5)
+    interested: Literal["yes", "maybe", "no"]
+    liked: Optional[str] = Field(default=None, max_length=2000)
+    concerns: Optional[str] = Field(default=None, max_length=2000)
+
+
+def _by_token(session: Session, token: str) -> TourRequest:
+    req = session.exec(select(TourRequest).where(TourRequest.feedback_token == token)).first() if token else None
+    if req is None:
+        raise HTTPException(status_code=404, detail="This feedback link isn't valid.")
+    return req
+
+
+@router.get("/feedback/{token}")
+def feedback_info(token: str, session: Session = Depends(get_session)):
+    req = _by_token(session, token)
+    prop = session.get(Property, req.property_id)
+    unit = f", {prop.address_line2}" if prop.address_line2 else ""
+    return {
+        "first_name": req.first_name,
+        "home": f"{prop.address_line1}{unit}, {prop.city}",
+        "when": fmt_local(req.tour_start, req.time_zone),
+        "submitted": session.exec(select(TourFeedback.id).where(TourFeedback.tour_request_id == req.id)).first()
+        is not None,
+    }
+
+
+@router.post("/feedback/{token}", status_code=201)
+def submit_feedback(token: str, payload: FeedbackIn, background: BackgroundTasks,
+                    session: Session = Depends(get_session)):
+    req = _by_token(session, token)
+    clean = lambda v: (v or "").strip() or None  # noqa: E731
+    session.add(TourFeedback(tour_request_id=req.id, rating=payload.rating, interested=payload.interested,
+                             liked=clean(payload.liked), concerns=clean(payload.concerns)))
+    try:
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+        raise HTTPException(status_code=409, detail="Thanks — we already have your feedback.")
+    background.add_task(notify_landlord_feedback, req.id)
+    return {"ok": True}

@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -24,6 +25,7 @@ from app.routers import (
     tour_requests,
 )
 from app.security import gatekeeper
+from app.services.scheduler import scheduler_loop
 
 
 @asynccontextmanager
@@ -31,7 +33,13 @@ async def lifespan(app: FastAPI):
     # Create tables on startup (Alembic owns the real schema, but this keeps
     # local/dev and test environments turnkey).
     create_all_tables()
+    task = None
+    if settings.SCHEDULER_ENABLED:
+        # Door codes, feedback requests and photo-ID deletion (see services/scheduler.py).
+        task = asyncio.create_task(scheduler_loop())
     yield
+    if task:
+        task.cancel()
 
 
 app = FastAPI(

@@ -4,6 +4,7 @@ import { BrowserRouter, Link, Route, Routes, useLocation } from 'react-router-do
 import { COMPANY } from './company';
 import { HomePage } from './pages/HomePage';
 import { ListingPage } from './pages/ListingPage';
+import { FeedbackPage } from './pages/FeedbackPage';
 import { TourRequestPage } from './pages/TourRequestPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { SmsTermsPage } from './pages/SmsTermsPage';
@@ -62,6 +63,7 @@ export default function PublicApp() {
             <Route path="/" element={<HomePage />} />
             <Route path="/homes/:id" element={<ListingPage />} />
             <Route path="/tour" element={<TourRequestPage />} />
+            <Route path="/feedback/:token" element={<FeedbackPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/sms-terms" element={<SmsTermsPage />} />
             <Route path="*" element={<NotFound />} />

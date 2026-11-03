@@ -8,7 +8,7 @@ import logging
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.config import settings
 from app.database import engine
@@ -134,7 +134,7 @@ VISIT_RULES = [
 
 async def _to_visitor(session: Session, req: TourRequest, kind: str, subject: str,
                       paragraphs: list[str], sms: str, bullets: list[str] | None = None,
-                      highlight: str | None = None) -> bool:
+                      highlight: str | None = None, button: tuple[str, str] | None = None) -> bool:
     """Email the visitor (always) and text them (only with consent).
 
     Layout: greeting, first paragraph, optional highlighted code, optional
@@ -149,6 +149,13 @@ async def _to_visitor(session: Session, req: TourRequest, kind: str, subject: st
         html_parts.append(
             "<p style='font-size:28px;font-weight:700;letter-spacing:4px;font-family:monospace;"
             f"background:#f1f5f9;padding:12px 16px;border-radius:8px;display:inline-block'>{e(highlight)}</p>"
+        )
+    if button:
+        label, url = button
+        text_parts.append(f"{label}: {url}")
+        html_parts.append(
+            f"<p><a href='{e(url)}' style='background:#1d4ed8;color:#fff;padding:10px 18px;"
+            f"border-radius:6px;text-decoration:none;display:inline-block'>{e(label)}</a></p>"
         )
     if rest and bullets:
         # The paragraph that introduces the bullets comes right before them.
@@ -264,3 +271,79 @@ async def send_access_code(request_id: uuid.UUID) -> str:
             session.add(req)
             session.commit()
         return code.code
+
+
+# --- After the tour, and landlord alerts ---------------------------------------
+
+
+def feedback_url(token: str) -> str:
+    return f"{settings.PUBLIC_SITE_URL.rstrip('/')}/feedback/{token}"
+
+
+async def request_feedback(request_id: uuid.UUID) -> bool:
+    """Send the visitor their private feedback link (creates the token once)."""
+    import secrets
+
+    with Session(engine) as session:
+        req = session.get(TourRequest, request_id)
+        if not req.feedback_token:
+            req.feedback_token = secrets.token_urlsafe(24)
+            session.add(req)
+            session.commit()
+        where = _address(session.get(Property, req.property_id))
+        url = feedback_url(req.feedback_token)
+        return await _to_visitor(
+            session, req, "feedback_request", f"How was your tour of {where}?",
+            [
+                f"Thanks for touring {where}! Would you share a few quick thoughts? It takes under a minute.",
+                "Your feedback helps us improve. If you'd like to apply, just reply to this email.",
+            ],
+            f"Thanks for touring {where}! Share quick feedback (under a minute): {url}",
+            button=("Share feedback", url),
+        )
+
+
+async def _to_landlord(session: Session, req: TourRequest, kind: str, subject: str, lines: list[str], sms: str):
+    review_url = f"{settings.LANDLORD_APP_URL.rstrip('/')}/tour-requests/{req.id}"
+    e = html.escape
+    text = "\n".join(lines) + f"\n\nOpen: {review_url}\n"
+    body = _wrap("".join(f"<p>{e(l)}</p>" for l in lines)
+                 + f"<p><a href='{e(review_url)}'>Open the tour request</a></p>")
+    await _email(session, req.id, "landlord", kind, settings.landlord_notify_email, subject, body, text)
+    await _sms(session, req.id, "landlord", kind, sms_service.normalize_us_phone(settings.LANDLORD_SMS_NUMBER),
+               f"{sms} {review_url}")
+
+
+async def alert_landlord_code_problem(request_id: uuid.UUID, reason: str) -> None:
+    """The door code couldn't be delivered automatically — the visitor may be locked out."""
+    with Session(engine) as session:
+        req = session.get(TourRequest, request_id)
+        where = _address(session.get(Property, req.property_id))
+        when = fmt_for_landlord(req.tour_start, req.time_zone)
+        name = f"{req.first_name} {req.last_name}"
+        await _to_landlord(
+            session, req, "code_send_problem", f"ACTION NEEDED: door code not delivered — {name}, {when}",
+            [f"The door code for {name}'s tour of {where} ({when}) could not be delivered.",
+             f"Reason: {reason}",
+             f"Contact them directly: {format_us_phone(req.phone)} / {req.email}, or fix the problem and use "
+             "'Send code now'."],
+            f"ACTION NEEDED: door code not delivered for {name}'s {when} tour ({reason}).",
+        )
+
+
+async def notify_landlord_feedback(request_id: uuid.UUID) -> None:
+    from app.models import TourFeedback  # local import keeps module import order simple
+
+    with Session(engine) as session:
+        req = session.get(TourRequest, request_id)
+        fb = session.exec(select(TourFeedback).where(TourFeedback.tour_request_id == req.id)).first()
+        where = _address(session.get(Property, req.property_id))
+        name = f"{req.first_name} {req.last_name}"
+        lines = [f"{name} left feedback on their tour of {where}.",
+                 f"Rating: {fb.rating}/5 · Interested in applying: {fb.interested}"]
+        if fb.liked:
+            lines.append(f"Liked: {fb.liked}")
+        if fb.concerns:
+            lines.append(f"Concerns: {fb.concerns}")
+        await _to_landlord(session, req, "feedback_received", f"Tour feedback: {name} — {fb.rating}/5",
+                           lines, f"New tour feedback from {name}: {fb.rating}/5, interested: {fb.interested}.")

@@ -138,13 +138,13 @@ export const TourDecisionPanel = ({
               ? `Sent ${fmtDateTime(r.code_sent_at)}`
               : sent
                 ? 'Code issued but not delivered — check Messages below, then resend.'
-                : 'Not sent yet — it goes out 30 minutes before the tour.'}
+                : 'Not sent yet — it goes out automatically 30 minutes before the tour.'}
           </span>
         </div>
         <p className="text-xs text-gray-600">
-          Until automatic sending is switched on, use <strong>Send code now</strong> about 30
-          minutes before the tour. The message includes the code and the visit rules (shoes off,
-          lights off, lock the door).
+          The code is sent automatically 30 minutes before the tour with the visit rules (shoes off,
+          lights off, lock the door). If it can't be delivered you'll get an urgent email and text.
+          Use <strong>Send code now</strong> only to send it early or resend it.
         </p>
         {noteBox('Optional note if you cancel')}
         <div className="flex flex-wrap gap-3">
@@ -183,7 +183,13 @@ export const TourDecisionPanel = ({
   return (
     <Card className="p-4 mb-6 text-sm text-gray-700">
       {r.status === 'declined' ? 'Declined' : r.status === 'cancelled' ? 'Cancelled' : 'Completed'}{' '}
-      {fmtDateTime(r.decided_at)}
+      {fmtDateTime(r.status === 'completed' ? r.completed_at : r.decided_at)}
+      {r.status === 'completed' &&
+        (r.feedback
+          ? ' · Feedback received (below)'
+          : r.feedback_requested_at
+            ? ` · Feedback requested ${fmtDateTime(r.feedback_requested_at)}`
+            : '')}
       {r.decision_note ? ` · Note: “${r.decision_note}”` : ''}
     </Card>
   );

@@ -10,6 +10,7 @@ const FILTERS: { value: '' | TourRequestStatus; label: string }[] = [
   { value: 'pending', label: 'Needs review' },
   { value: 'approved', label: 'Approved' },
   { value: 'declined', label: 'Declined' },
+  { value: 'completed', label: 'Completed' },
   { value: '', label: 'All' },
 ];
 

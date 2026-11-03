@@ -26,8 +26,9 @@ one PostgreSQL database serve two sites:
     stays spent) and tells the visitor.
   - **Send code now / Resend**: emails (and texts, with consent) the code plus
     the visit rules — shoes off, all lights off when leaving, lock the door.
-    Resend reuses the same code. Until the scheduler phase, use this about 30
-    minutes before the tour.
+    Resend reuses the same code. Normally not needed: the scheduler sends it.
+  - Filters: Needs review, Approved, Declined, Completed, All. Completed tours
+    show the visitor's feedback (rating, interested in applying, liked, concerns).
   - An optional note is included in approve/decline/cancel messages.
 
 **Public site** | `apexelementgrp.com`, `www.`, `tours.` | Prospective renters | Public; can reach only `/api/v1/public/*` |
@@ -68,10 +69,24 @@ one PostgreSQL database serve two sites:
   opted in). The exact consent wording and time are stored with the request.
 - `/privacy` and `/sms-terms` (used for Twilio toll-free verification).
 
+**Automation** (`app/services/scheduler.py`, runs every minute inside the web
+process; `SCHEDULER_ENABLED`, `SCHEDULER_INTERVAL_SECONDS`):
+1. **Door codes** go out 30 minutes before each approved tour (immediately if
+   approved later). Up to 3 attempts, 5 minutes apart. If a code can't be
+   delivered (none available, or every channel failed) the landlord gets an
+   urgent "ACTION NEEDED" email + text.
+2. **One hour after a tour ends** it's marked *completed* and the visitor gets a
+   private feedback link (`/feedback/<token>`), only if they received a code and
+   the tour was within the last 3 days. The landlord is emailed/texted when
+   feedback arrives.
+3. **Photo IDs** are deleted once their date passes (30 days after the tour).
+
+Rows are claimed with `SELECT … FOR UPDATE SKIP LOCKED` and progress is saved
+before sending, so overlapping instances during a deploy never double-send.
+
 **Roadmap (tour requests):** ✅ submission + landlord alerts → ✅ door-code
-inventory per property → ✅ approve/decline (+ manual send code) → access code sent automatically 30 min before the
-tour → post-tour feedback → automatic photo-ID deletion 30 days after the tour
-(the deletion date is already recorded on each request). Notifications by email (Cloudflare Email
+inventory per property → ✅ approve/decline (+ manual send code) → ✅ access code sent automatically 30 min before the
+tour → ✅ post-tour feedback → ✅ automatic photo-ID deletion 30 days after the tour. Notifications by email (Cloudflare Email
 Service) and SMS (Twilio).
 
 ## Stack
@@ -132,7 +147,7 @@ tests/               pytest suite
 `payment`, `expense`, `lease_template`, `lease_break_request`,
 `lease_break_option`, `lease_break_document`, `email_approval`, `listing`,
 `listing_photo`, `tour_request`, `tour_id_photo`, `notification_log`,
-`access_code`.
+`access_code`, `tour_feedback`.
 
 All tables use UUID primary keys and timezone-aware `created_at`/`updated_at`.
 Instants are stored in UTC; `property.time_zone` (IANA name, e.g.
@@ -167,6 +182,7 @@ Public API (anonymous; only live listings and safe fields):
 | `GET /api/v1/public/listings/{id}/property-photo` | Property photo (cover fallback when the listing has no photos) |
 | `GET /api/v1/public/listings/{id}/availability?day=YYYY-MM-DD` | Open start times for that local day |
 | `POST /api/v1/public/tour-requests` | Submit a tour request (multipart form incl. `id_photo`) |
+| `GET/POST /api/v1/public/feedback/{token}` | Post-tour feedback form (token from the private link) |
 
 Public listings include `photo_urls` (cover first), already resolved to
 listing photos or the property-photo fallback.
@@ -203,7 +219,10 @@ Covers host gatekeeping, Access JWT validation, DocuSign webhook signatures,
 the listing lifecycle and public visibility, lease ↔ property linking, and tour
 booking (slot rules, time zones, double-booking, spam limits, notifications),
 the door-code lifecycle (reserve/release/issue, expiry, no reuse), and
-approve/decline/cancel/send-code with the exact visitor messages.
+approve/decline/cancel/send-code with the exact visitor messages, and the
+scheduler (send timing, retries + landlord alerts, completion + feedback
+requests, photo-ID deletion) plus the feedback form. `tests/conftest.py` turns
+the background loop off; tests call `run_due_jobs(now)` directly.
 
 ## Migrations
 

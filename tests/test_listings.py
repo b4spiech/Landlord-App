@@ -9,7 +9,7 @@ from sqlmodel import Session, delete, select
 from app.config import settings
 from app.database import engine
 from app.main import app
-from app.models import AccessCode, Listing, ListingPhoto, NotificationLog, Property, TourIdPhoto, TourRequest
+from app.models import TourFeedback, AccessCode, Listing, ListingPhoto, NotificationLog, Property, TourIdPhoto, TourRequest
 from app.seed import seed
 
 ADMIN = {"host": "dev-app.example.com"}
@@ -22,7 +22,7 @@ PNG = (
 
 def _clear_listings():
     with Session(engine) as s:
-        for model in (AccessCode, NotificationLog, TourIdPhoto, TourRequest, ListingPhoto, Listing):
+        for model in (TourFeedback, AccessCode, NotificationLog, TourIdPhoto, TourRequest, ListingPhoto, Listing):
             s.exec(delete(model))
         s.commit()
 

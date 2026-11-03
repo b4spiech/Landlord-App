@@ -473,6 +473,19 @@ export interface TourRequest {
   access_code?: string | null;
   access_code_status?: 'reserved' | 'issued' | null;
   code_sent_at?: string | null;
+  code_send_attempts: number;
+  completed_at?: string | null;
+  feedback_requested_at?: string | null;
+  id_photo_deleted_at?: string | null;
+  feedback?: TourFeedback | null;
+}
+
+export interface TourFeedback {
+  created_at: string;
+  rating: number;
+  interested: 'yes' | 'maybe' | 'no';
+  liked?: string | null;
+  concerns?: string | null;
 }
 
 export interface NotificationEntry {
