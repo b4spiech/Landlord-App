@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     SMTP_PORT: int = 587
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
-    SMTP_FROM: str = "noreply@apexelementgroup.com"
+    SMTP_FROM: str = "noreply@apexelementgrp.com"
 
     CLOUDFLARE_ACCESS_ENABLED: bool = False
 
