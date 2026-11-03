@@ -40,7 +40,13 @@ export const TourRequestPage = () => {
   const { data: listings } = useLoad(publicApi.listings, 'listings');
   const preselected = params.get('home') ?? '';
   const [home, setHome] = useState<string | null>(null);
-  const selectedHome = home ?? (listings?.some((l) => l.id === preselected) ? preselected : '');
+  const selectedHome =
+    home ??
+    (listings?.some((l) => l.id === preselected)
+      ? preselected
+      : listings?.length === 1
+        ? listings[0].id
+        : '');
   const listing = listings?.find((l) => l.id === selectedHome);
 
   const [day, setDay] = useState('');
@@ -113,9 +119,30 @@ export const TourRequestPage = () => {
         pm in the home's local time.
       </p>
 
+      {listing && (
+        <div className="mt-6 flex gap-4 rounded-lg border bg-gray-50 p-3">
+          {listing.photo_urls[0] && (
+            <img src={listing.photo_urls[0]} alt="" className="h-20 w-28 shrink-0 rounded object-cover" />
+          )}
+          <div className="min-w-0 text-sm">
+            <p className="font-semibold text-gray-900">{listing.headline}</p>
+            <p className="text-gray-600">
+              {listing.address_line1}
+              {listing.address_line2 ? `, ${listing.address_line2}` : ''}, {listing.city}, {listing.state}
+            </p>
+            <p className="text-gray-900">
+              {money(listing.monthly_rent)}/mo ·{' '}
+              <Link to={`/homes/${listing.id}`} className="text-blue-700 hover:underline">
+                View details
+              </Link>
+            </p>
+          </div>
+        </div>
+      )}
+
       <form className="mt-6 space-y-5" onSubmit={onSubmit}>
         <div>
-          <Label htmlFor="property">Home</Label>
+          <Label htmlFor="property">{listing ? 'Touring' : 'Home'}</Label>
           <select
             id="property"
             className={input}

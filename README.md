@@ -35,9 +35,11 @@ one PostgreSQL database serve two sites:
   photos of its own, the public site uses the property's photo as the cover.
 
 **Public site**
-- Company homepage with currently listed homes.
+- Company homepage with currently listed homes. Each home card has **Request a
+  tour** (opens the form with that home preselected) and **Details**.
 - `/homes/:id` listing page with photo gallery and details.
-- `/tour` request form: home, name, email, mobile, date, start time (only open
+- `/tour` request form (`?home=<listing id>` preselects a home, shown as a summary
+  card; a single listed home is selected automatically): home, name, email, mobile, date, start time (only open
   slots, in the home's local time), photo ID, optional SMS consent. Rules
   (enforced server-side): 30-minute tours starting 8:00 am–7:30 pm local, at
   least 2 hours ahead, up to 60 days out, one active booking per home per slot.

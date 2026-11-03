@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Link, Route, Routes, useLocation } from 'react-router-dom';
+
 import { COMPANY } from './company';
 import { HomePage } from './pages/HomePage';
 import { ListingPage } from './pages/ListingPage';
@@ -13,6 +14,20 @@ const ScrollToTop = () => {
     window.scrollTo(0, 0);
   }, [pathname]);
   return null;
+};
+
+/** "Request a tour" in the header: keeps the home you're viewing selected. */
+const HeaderTourLink = () => {
+  const { pathname } = useLocation();
+  const home = pathname.match(/^\/homes\/([^/]+)/)?.[1];
+  return (
+    <Link
+      to={home ? `/tour?home=${home}` : '/tour'}
+      className="text-sm font-medium text-blue-700 hover:underline"
+    >
+      Request a tour
+    </Link>
+  );
 };
 
 const NotFound = () => (
@@ -38,9 +53,7 @@ export default function PublicApp() {
             <Link to="/" className="text-lg font-bold text-gray-900">
               {COMPANY.shortName}
             </Link>
-            <Link to="/tour" className="text-sm font-medium text-blue-700 hover:underline">
-              Request a tour
-            </Link>
+            <HeaderTourLink />
           </div>
         </header>
 

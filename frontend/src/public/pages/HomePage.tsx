@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import { COMPANY } from '../company';
 import { HomeCard } from '../HomeCard';
 import { publicApi } from '../publicApi';
@@ -22,12 +21,12 @@ export const HomePage = () => {
           offer well-kept homes, straightforward leases, and self-guided tours on your schedule.
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
-          <Link
-            to="/tour"
+          <a
+            href="#homes"
             className="rounded bg-blue-700 px-5 py-2.5 text-white font-medium hover:bg-blue-800"
           >
-            Request a tour
-          </Link>
+            See available homes
+          </a>
           <a
             href={`mailto:${COMPANY.email}`}
             className="rounded border border-gray-300 px-5 py-2.5 font-medium text-gray-800 hover:bg-gray-50"
