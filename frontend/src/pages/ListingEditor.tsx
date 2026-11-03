@@ -285,7 +285,10 @@ const ListingEditorForm = ({
                 )}
               </div>
               {photos.length === 0 && (
-                <p className="text-sm text-gray-500">No photos yet. The first photo is the cover image.</p>
+                <p className="text-sm text-gray-500">
+                  No listing photos yet, so the tour site uses the property's photo (if it has one)
+                  as the cover. Add photos here to show a full gallery; the first one is the cover.
+                </p>
               )}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {photos.map((p, i) => (

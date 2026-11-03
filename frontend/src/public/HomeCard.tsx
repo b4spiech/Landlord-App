@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import type { PublicListing } from '../types';
-import { publicApi } from './publicApi';
 import { availability, money, specs } from './listingFormat';
 
 export const HomeCard = ({ listing }: { listing: PublicListing }) => (
@@ -9,9 +8,9 @@ export const HomeCard = ({ listing }: { listing: PublicListing }) => (
     className="group block overflow-hidden rounded-lg border hover:shadow-md transition-shadow"
   >
     <div className="aspect-[4/3] bg-gray-100">
-      {listing.photo_ids[0] ? (
+      {listing.photo_urls[0] ? (
         <img
-          src={publicApi.photoUrl(listing.id, listing.photo_ids[0])}
+          src={listing.photo_urls[0]}
           alt={listing.headline}
           className="h-full w-full object-cover"
           loading="lazy"

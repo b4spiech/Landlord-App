@@ -15,5 +15,4 @@ async function get<T>(path: string): Promise<T> {
 export const publicApi = {
   listings: () => get<PublicListing[]>('/listings'),
   listing: (id: string) => get<PublicListing>(`/listings/${id}`),
-  photoUrl: (listingId: string, photoId: string) => `${BASE}/listings/${listingId}/photos/${photoId}`,
 };

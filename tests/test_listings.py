@@ -130,7 +130,8 @@ def test_photos_upload_order_and_public_visibility(client, property_id):
     client.post(f"/api/v1/listings/{lid}/publish", headers=ADMIN)
     r = client.get(f"/api/v1/public/listings/{lid}/photos/{ids[0]}", headers=PUBLIC)
     assert r.status_code == 200 and r.content == PNG
-    assert client.get(f"/api/v1/public/listings/{lid}", headers=PUBLIC).json()["photo_ids"] == new_order
+    urls = client.get(f"/api/v1/public/listings/{lid}", headers=PUBLIC).json()["photo_urls"]
+    assert urls == [f"/api/v1/public/listings/{lid}/photos/{pid}" for pid in new_order]
 
     bad = [("files", ("x.txt", io.BytesIO(b"hi"), "text/plain"))]
     assert client.post(f"/api/v1/listings/{lid}/photos", files=bad, headers=ADMIN).status_code == 422
@@ -145,3 +146,22 @@ def test_property_time_zone_validation(client, property_id):
     assert r.status_code == 422
     r = client.patch(f"/api/v1/properties/{property_id}", json={"time_zone": "America/Phoenix"}, headers=ADMIN)
     assert r.status_code == 200 and r.json()["time_zone"] == "America/Phoenix"
+
+
+def test_property_photo_is_cover_when_listing_has_no_photos(client, property_id):
+    lid = _create(client, property_id, publish=True, monthly_rent=1800, available_date="2026-12-01").json()["id"]
+    assert client.get(f"/api/v1/public/listings/{lid}", headers=PUBLIC).json()["photo_urls"] == []
+
+    files = {"file": ("house.png", io.BytesIO(PNG), "image/png")}
+    assert client.post(f"/api/v1/properties/{property_id}/photo", files=files, headers=ADMIN).status_code == 201
+    try:
+        urls = client.get(f"/api/v1/public/listings/{lid}", headers=PUBLIC).json()["photo_urls"]
+        assert len(urls) == 1 and "/property-photo?v=" in urls[0]
+        r = client.get(urls[0], headers=PUBLIC)
+        assert r.status_code == 200 and r.content == PNG
+
+        # Hidden again once the listing is no longer live.
+        client.post(f"/api/v1/listings/{lid}/unpublish", headers=ADMIN)
+        assert client.get(f"/api/v1/public/listings/{lid}/property-photo", headers=PUBLIC).status_code == 404
+    finally:
+        client.delete(f"/api/v1/properties/{property_id}/photo", headers=ADMIN)

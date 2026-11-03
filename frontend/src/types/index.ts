@@ -438,5 +438,6 @@ export interface PublicListing {
   pet_policy?: PetPolicy | null;
   utilities_included?: string | null;
   time_zone: string;
-  photo_ids: string[];
+  /** Image URLs, cover first (falls back to the property photo). */
+  photo_urls: string[];
 }

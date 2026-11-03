@@ -26,7 +26,8 @@ one PostgreSQL database serve two sites:
   date, minimum lease, pets, utilities, description, private notes), ordered
   photos (first = cover), and where it's advertised (Zillow Rental Manager,
   Facebook, Craigslist, …, with URL + date). Status: Draft → Listed → Closed
-  (rented / withdrawn). One open listing per property.
+  (rented / withdrawn). One open listing per property. If a listing has no
+  photos of its own, the public site uses the property's photo as the cover.
 
 **Public site**
 - Company homepage with currently listed homes.
@@ -128,6 +129,10 @@ Public API (anonymous; only live listings and safe fields):
 | `GET /api/v1/public/listings` | Listed homes |
 | `GET /api/v1/public/listings/{id}` | One listed home |
 | `GET /api/v1/public/listings/{id}/photos/{photo_id}` | Listing photo |
+| `GET /api/v1/public/listings/{id}/property-photo` | Property photo (cover fallback when the listing has no photos) |
+
+Public listings include `photo_urls` (cover first), already resolved to
+listing photos or the property-photo fallback.
 
 Health check: `GET /health`.
 

@@ -103,4 +103,6 @@ class PublicListing(BaseModel):
     pet_policy: Optional[str] = None
     utilities_included: Optional[str] = None
     time_zone: str
-    photo_ids: list[uuid.UUID] = []
+    # Ready-to-use image URLs, cover first. Falls back to the property's own
+    # photo when the listing has no photos of its own.
+    photo_urls: list[str] = []

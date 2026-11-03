@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlmodel import Session, select
 
 from app.database import get_session
-from app.models import Listing, ListingPhoto, Property
+from app.models import Listing, ListingPhoto, Property, PropertyPhoto
 from app.models.enums import ListingStatus
 from app.routers.listings import photo_ids
 from app.schemas.listing import PublicListing
@@ -42,6 +42,24 @@ def _default_headline(prop: Property) -> str:
     return f"{lead} {kind} in {prop.city}".strip()
 
 
+def _property_photo(session: Session, property_id: uuid.UUID):
+    return session.exec(
+        select(PropertyPhoto)
+        .where(PropertyPhoto.property_id == property_id)
+        .order_by(PropertyPhoto.created_at.desc())
+    ).first()
+
+
+def _photo_urls(session: Session, listing: Listing) -> list[str]:
+    base = f"/api/v1/public/listings/{listing.id}"
+    ids = photo_ids(session, listing.id)
+    if ids:
+        return [f"{base}/photos/{pid}" for pid in ids]
+    fallback = _property_photo(session, listing.property_id)
+    # Version the URL by photo id so a replaced property photo isn't served stale from cache.
+    return [f"{base}/property-photo?v={fallback.id}"] if fallback else []
+
+
 def _to_public(session: Session, listing: Listing, prop: Property) -> PublicListing:
     return PublicListing(
         id=listing.id,
@@ -63,7 +81,7 @@ def _to_public(session: Session, listing: Listing, prop: Property) -> PublicList
         pet_policy=listing.pet_policy,
         utilities_included=listing.utilities_included,
         time_zone=property_time_zone(prop),
-        photo_ids=photo_ids(session, listing.id),
+        photo_urls=_photo_urls(session, listing),
     )
 
 
@@ -89,6 +107,17 @@ def public_listings(session: Session = Depends(get_session)):
 def public_listing(listing_id: uuid.UUID, session: Session = Depends(get_session)):
     listing, prop = _get_live(session, listing_id)
     return _to_public(session, listing, prop)
+
+
+@router.get("/listings/{listing_id}/property-photo")
+def public_property_photo(listing_id: uuid.UUID, session: Session = Depends(get_session)):
+    """The property's own photo, used as the cover when a listing has no photos."""
+    listing, _ = _get_live(session, listing_id)
+    photo = _property_photo(session, listing.property_id)
+    if photo is None:
+        raise HTTPException(status_code=404, detail="Photo not found")
+    return Response(content=photo.content, media_type=photo.content_type or "image/jpeg",
+                    headers={"Cache-Control": "public, max-age=86400"})
 
 
 @router.get("/listings/{listing_id}/photos/{photo_id}")

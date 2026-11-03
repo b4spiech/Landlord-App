@@ -31,7 +31,7 @@ export const ListingPage = () => {
       </div>
     );
 
-  const photos = listing.photo_ids;
+  const photos = listing.photo_urls;
   const facts: [string, string | null | undefined][] = [
     ['Rent', `${money(listing.monthly_rent)}/mo`],
     ['Security deposit', listing.security_deposit != null ? money(listing.security_deposit) : null],
@@ -50,16 +50,16 @@ export const ListingPage = () => {
       {photos.length > 0 && (
         <div>
           <img
-            src={publicApi.photoUrl(listing.id, photos[active])}
+            src={photos[active]}
             alt={`${listing.headline} photo ${active + 1}`}
             className="aspect-[4/3] w-full rounded-lg object-cover bg-gray-100"
           />
           {photos.length > 1 && (
             <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-              {photos.map((pid, i) => (
-                <button key={pid} onClick={() => setActive(i)} className="shrink-0">
+              {photos.map((url, i) => (
+                <button key={url} onClick={() => setActive(i)} className="shrink-0">
                   <img
-                    src={publicApi.photoUrl(listing.id, pid)}
+                    src={url}
                     alt={`Photo ${i + 1}`}
                     loading="lazy"
                     className={`h-16 w-24 rounded object-cover ${i === active ? 'ring-2 ring-blue-700' : 'opacity-70 hover:opacity-100'}`}
