@@ -72,6 +72,7 @@ export interface Property extends Timestamped {
   city: string;
   state: string;
   postal_code: string;
+  time_zone?: string | null;
   owner_id: string;
   management_company_id?: string | null;
   jurisdiction_id: string;
@@ -362,4 +363,80 @@ export interface EmailApproval extends Timestamped {
   body_html: string;
   attachments: Array<Record<string, unknown>>;
   approved_by?: string | null;
+}
+
+// --- Listings -------------------------------------------------------------
+
+export type ListingStatus = 'draft' | 'listed' | 'closed';
+export type ListingCloseReason = 'rented' | 'withdrawn';
+export type PetPolicy = 'no_pets' | 'cats_ok' | 'dogs_ok' | 'cats_and_dogs_ok' | 'case_by_case';
+export type ListingChannelType =
+  | 'zillow_rental_manager'
+  | 'facebook_marketplace'
+  | 'craigslist'
+  | 'apartments_com'
+  | 'realtor_com'
+  | 'hotpads'
+  | 'mls'
+  | 'yard_sign'
+  | 'other';
+
+export interface ListingChannelEntry {
+  channel: ListingChannelType;
+  url?: string | null;
+  listed_on?: string | null;
+}
+
+export interface ListingFields {
+  headline?: string | null;
+  description?: string | null;
+  monthly_rent?: number | null;
+  security_deposit?: number | null;
+  available_date?: string | null;
+  lease_term_months?: number | null;
+  pet_policy?: PetPolicy | null;
+  utilities_included?: string | null;
+  channels?: ListingChannelEntry[];
+  internal_notes?: string | null;
+}
+
+export interface Listing extends Timestamped, ListingFields {
+  property_id: string;
+  status: ListingStatus;
+  close_reason?: ListingCloseReason | null;
+  channels: ListingChannelEntry[];
+  listed_at?: string | null;
+  closed_at?: string | null;
+  photo_ids: string[];
+  public_url?: string | null;
+}
+
+export interface ListingPhoto {
+  id: string;
+  sort_order: number;
+  filename?: string | null;
+  file_size?: number | null;
+}
+
+export interface PublicListing {
+  id: string;
+  headline: string;
+  description?: string | null;
+  property_type: PropertyType;
+  address_line1: string;
+  address_line2?: string | null;
+  city: string;
+  state: string;
+  postal_code: string;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  square_feet?: number | null;
+  monthly_rent?: number | null;
+  security_deposit?: number | null;
+  available_date?: string | null;
+  lease_term_months?: number | null;
+  pet_policy?: PetPolicy | null;
+  utilities_included?: string | null;
+  time_zone: string;
+  photo_ids: string[];
 }

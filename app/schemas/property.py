@@ -1,7 +1,9 @@
 import uuid
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+
+from app.services.timezones import validate_time_zone
 
 from app.models.enums import PropertyType
 from app.schemas.common import TimestampedRead
@@ -15,6 +17,7 @@ class PropertyBase(BaseModel):
     city: str
     state: str
     postal_code: str
+    time_zone: Optional[str] = None
     owner_id: uuid.UUID
     management_company_id: Optional[uuid.UUID] = None
     jurisdiction_id: uuid.UUID
@@ -25,6 +28,11 @@ class PropertyBase(BaseModel):
     square_feet: Optional[int] = None
     hoa_name: Optional[str] = None
     notes: Optional[str] = None
+
+    @field_validator("time_zone")
+    @classmethod
+    def check_time_zone(cls, v):
+        return validate_time_zone(v)
 
 
 class PropertyCreate(PropertyBase):
@@ -39,6 +47,7 @@ class PropertyUpdate(BaseModel):
     city: Optional[str] = None
     state: Optional[str] = None
     postal_code: Optional[str] = None
+    time_zone: Optional[str] = None
     owner_id: Optional[uuid.UUID] = None
     management_company_id: Optional[uuid.UUID] = None
     jurisdiction_id: Optional[uuid.UUID] = None
@@ -49,6 +58,11 @@ class PropertyUpdate(BaseModel):
     square_feet: Optional[int] = None
     hoa_name: Optional[str] = None
     notes: Optional[str] = None
+
+    @field_validator("time_zone")
+    @classmethod
+    def check_time_zone(cls, v):
+        return validate_time_zone(v)
 
 
 class PropertyRead(PropertyBase, TimestampedRead):

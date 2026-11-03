@@ -10,6 +10,7 @@ from app.models.hoa import HOA, HOADocument
 from app.models.jurisdiction import Jurisdiction
 from app.models.lease import Lease, LeaseTenant
 from app.models.lease_document import LeaseDocument
+from app.models.listing import Listing, ListingPhoto
 from app.models.lease_break import (
     LeaseBreakDocument,
     LeaseBreakOption,
@@ -39,4 +40,6 @@ __all__ = [
     "EmailApproval",
     "HOA",
     "HOADocument",
+    "Listing",
+    "ListingPhoto",
 ]

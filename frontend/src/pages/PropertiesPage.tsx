@@ -1,15 +1,19 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { propertyAPI } from '../services/api';
+import { listingAPI, propertyAPI } from '../services/api';
 import { useAsync } from '../lib/useAsync';
 import type { Property } from '../types';
 import { Button, Card, EmptyState, ErrorState, PageHeader, Spinner } from '../components/ui';
 import { Modal } from '../components/Modal';
 import { PropertyForm } from '../components/PropertyForm';
 import { propertyTypeLabel } from '../lib/format';
+import { StatusBadge } from '../components/StatusBadge';
+import { LISTING_STATUS_LABELS, listingStatusVariant } from '../lib/listing';
 
 export const PropertiesPage = () => {
   const { data, loading, error, reload } = useAsync(() => propertyAPI.list());
+  const { data: openListings } = useAsync(() => listingAPI.list({ open_only: true }));
+  const listingFor = (propertyId: string) => openListings?.find((l) => l.property_id === propertyId);
   const [editing, setEditing] = useState<Property | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -49,7 +53,15 @@ export const PropertiesPage = () => {
                 <Link to={`/properties/${p.id}`} className="font-semibold text-gray-900 hover:text-blue-600">
                   {p.name}
                 </Link>
-                <span className="text-xs text-gray-400">{propertyTypeLabel(p.property_type)}</span>
+                <div className="flex flex-col items-end gap-1">
+                  <span className="text-xs text-gray-400">{propertyTypeLabel(p.property_type)}</span>
+                  {listingFor(p.id) && (
+                    <StatusBadge
+                      status={LISTING_STATUS_LABELS[listingFor(p.id)!.status]}
+                      variant={listingStatusVariant(listingFor(p.id)!.status)}
+                    />
+                  )}
+                </div>
               </div>
               <p className="text-sm text-gray-500 mt-1">
                 {p.address_line1}

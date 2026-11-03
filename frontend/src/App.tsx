@@ -12,6 +12,7 @@ import { TenantsPage } from './pages/TenantsPage';
 import { HOAsPage } from './pages/HOAsPage';
 import { HOADetail } from './pages/HOADetail';
 import { LeaseBreakPage } from './pages/LeaseBreakPage';
+import { ListingEditor } from './pages/ListingEditor';
 import { ApprovalsPage } from './pages/ApprovalsPage';
 import { NotFound } from './pages/NotFound';
 
@@ -24,6 +25,7 @@ function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/properties" element={<PropertiesPage />} />
           <Route path="/properties/:id" element={<PropertyDetail />} />
+          <Route path="/listings/:id" element={<ListingEditor />} />
           <Route path="/leases" element={<LeasesPage />} />
           <Route path="/leases/import" element={<LeaseImportPage />} />
           <Route path="/leases/:id" element={<LeaseDetail />} />

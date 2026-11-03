@@ -19,6 +19,9 @@ class Property(TimestampMixin, table=True):
     city: str = Field(max_length=100)
     state: str = Field(max_length=2, index=True)
     postal_code: str = Field(max_length=20)
+    # IANA time zone (e.g. America/Phoenix). Tour times are chosen and shown in
+    # the property's local time. Null = derive from state (see services/timezones).
+    time_zone: Optional[str] = Field(default=None, max_length=64)
 
     # Relationships (foreign keys)
     owner_id: uuid.UUID = Field(foreign_key="owner.id", index=True)

@@ -2,13 +2,16 @@ import { useEffect } from 'react';
 import { BrowserRouter, Link, Route, Routes, useLocation } from 'react-router-dom';
 import { COMPANY } from './company';
 import { HomePage } from './pages/HomePage';
+import { ListingPage } from './pages/ListingPage';
 import { TourRequestPage } from './pages/TourRequestPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { SmsTermsPage } from './pages/SmsTermsPage';
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
-  useEffect(() => window.scrollTo(0, 0), [pathname]);
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
   return null;
 };
 
@@ -44,6 +47,7 @@ export default function PublicApp() {
         <main className="flex-1 w-full max-w-3xl mx-auto px-4 py-8">
           <Routes>
             <Route path="/" element={<HomePage />} />
+            <Route path="/homes/:id" element={<ListingPage />} />
             <Route path="/tour" element={<TourRequestPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/sms-terms" element={<SmsTermsPage />} />

@@ -6,6 +6,7 @@ import { Button, Card, ErrorState, PageHeader, Spinner } from '../components/ui'
 import { Modal } from '../components/Modal';
 import { PropertyForm } from '../components/PropertyForm';
 import { PropertyPhotoCard } from '../components/PropertyPhotoCard';
+import { ListingCard } from '../components/ListingCard';
 import { StatusBadge } from '../components/StatusBadge';
 import { formatCurrency, formatDate, leaseStatusVariant, propertyTypeLabel } from '../lib/format';
 
@@ -45,6 +46,8 @@ export const PropertyDetail = () => {
 
       <div className="grid lg:grid-cols-2 gap-6 items-start">
        <div className="space-y-6">
+      <ListingCard propertyId={property.id} />
+
       <Card className="p-5">
         <h2 className="font-semibold text-gray-900 mb-3">Details</h2>
         <dl className="text-sm space-y-2">
@@ -63,6 +66,10 @@ export const PropertyDetail = () => {
                 '—'
               )}
             </dd>
+          </div>
+          <div className="flex justify-between">
+            <dt className="text-gray-500">Time zone</dt>
+            <dd>{property.time_zone ?? '—'}</dd>
           </div>
           <div className="flex justify-between">
             <dt className="text-gray-500">Bedrooms</dt>

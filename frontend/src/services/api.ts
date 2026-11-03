@@ -13,6 +13,10 @@ import type {
   LeaseBreakRequest,
   LeaseDetail,
   LeaseDocument,
+  Listing,
+  ListingCloseReason,
+  ListingFields,
+  ListingPhoto,
   ManagementCompany,
   Owner,
   ParseDocumentResult,
@@ -84,6 +88,31 @@ export const propertyPhotoAPI = {
       }),
     ),
   remove: (propertyId: string) => api.delete(`/properties/${propertyId}/photo`),
+};
+
+export const listingAPI = {
+  list: (params?: { property_id?: string; status_filter?: string; open_only?: boolean }) =>
+    data<Listing[]>(api.get('/listings', { params })),
+  get: (id: string) => data<Listing>(api.get(`/listings/${id}`)),
+  create: (body: ListingFields & { property_id: string; publish?: boolean }) =>
+    data<Listing>(api.post('/listings', body)),
+  update: (id: string, body: ListingFields) => data<Listing>(api.patch(`/listings/${id}`, body)),
+  publish: (id: string) => data<Listing>(api.post(`/listings/${id}/publish`)),
+  unpublish: (id: string) => data<Listing>(api.post(`/listings/${id}/unpublish`)),
+  close: (id: string, reason: ListingCloseReason) =>
+    data<Listing>(api.post(`/listings/${id}/close`, { reason })),
+  photos: (id: string) => data<ListingPhoto[]>(api.get(`/listings/${id}/photos`)),
+  photoUrl: (id: string, photoId: string) => `${API_URL}/listings/${id}/photos/${photoId}`,
+  uploadPhotos: (id: string, files: File[]) => {
+    const form = new FormData();
+    files.forEach((f) => form.append('files', f));
+    return data<ListingPhoto[]>(
+      api.post(`/listings/${id}/photos`, form, { headers: { 'Content-Type': 'multipart/form-data' } }),
+    );
+  },
+  reorderPhotos: (id: string, photoIds: string[]) =>
+    data<ListingPhoto[]>(api.put(`/listings/${id}/photos/order`, { photo_ids: photoIds })),
+  deletePhoto: (id: string, photoId: string) => api.delete(`/listings/${id}/photos/${photoId}`),
 };
 
 export const tenantAPI = {

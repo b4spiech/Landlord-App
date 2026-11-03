@@ -15,6 +15,7 @@ import { OwnerForm } from './OwnerForm';
 import { ManagementCompanyForm } from './ManagementCompanyForm';
 import { HOAForm } from './HOAForm';
 import { useToast } from './Toast';
+import { TIME_ZONES } from '../lib/listing';
 
 const PROPERTY_TYPES: { value: PropertyType; label: string }[] = [
   { value: 'condo', label: 'Condo' },
@@ -45,12 +46,14 @@ export const PropertyForm: React.FC<Props> = ({ existing, onSaved, onCancel }) =
   const [city, setCity] = useState(existing?.city ?? '');
   const [state, setState] = useState(existing?.state ?? '');
   const [postal, setPostal] = useState(existing?.postal_code ?? '');
+  const [timeZone, setTimeZone] = useState(existing?.time_zone ?? '');
   const [ownerId, setOwnerId] = useState(existing?.owner_id ?? '');
   const [companyId, setCompanyId] = useState(existing?.management_company_id ?? '');
   const [jurisdictionId, setJurisdictionId] = useState(existing?.jurisdiction_id ?? '');
   const [hoaId, setHoaId] = useState(existing?.hoa_id ?? '');
   const [bedrooms, setBedrooms] = useState<number | ''>(existing?.bedrooms ?? '');
   const [bathrooms, setBathrooms] = useState<number | ''>(existing?.bathrooms ?? '');
+  const [squareFeet, setSquareFeet] = useState<number | ''>(existing?.square_feet ?? '');
   const [notes, setNotes] = useState(existing?.notes ?? '');
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -121,12 +124,14 @@ export const PropertyForm: React.FC<Props> = ({ existing, onSaved, onCancel }) =
       city: city.trim(),
       state: state.toUpperCase(),
       postal_code: postal.trim(),
+      time_zone: timeZone || (state.toUpperCase() === 'AZ' ? 'America/Phoenix' : null),
       owner_id: ownerId,
       management_company_id: companyId || null,
       jurisdiction_id: jurisdictionId,
       hoa_id: hoaId || null,
       bedrooms: bedrooms === '' ? null : bedrooms,
       bathrooms: bathrooms === '' ? null : bathrooms,
+      square_feet: squareFeet === '' ? null : squareFeet,
       notes: notes.trim() || null,
     };
     try {
@@ -194,6 +199,10 @@ export const PropertyForm: React.FC<Props> = ({ existing, onSaved, onCancel }) =
         </Field>
       </div>
 
+      <Field label="Time zone (tour times use the property's local time)">
+        <Select value={timeZone} onChange={setTimeZone} options={TIME_ZONES} placeholder="Based on state" />
+      </Field>
+
       <div className="grid grid-cols-2 gap-4">
         <Field label="Owner" required error={errors.ownerId}>
           <div className="flex gap-2">
@@ -236,6 +245,9 @@ export const PropertyForm: React.FC<Props> = ({ existing, onSaved, onCancel }) =
         </Field>
         <Field label="Bathrooms">
           <NumberInput value={bathrooms} onChange={setBathrooms} min={0} step={0.5} />
+        </Field>
+        <Field label="Square feet">
+          <NumberInput value={squareFeet} onChange={setSquareFeet} min={0} step={10} />
         </Field>
       </div>
 

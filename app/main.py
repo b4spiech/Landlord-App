@@ -13,6 +13,7 @@ from app.routers import (
     jurisdictions,
     lease_break,
     leases,
+    listings,
     management_companies,
     owners,
     properties,
@@ -67,6 +68,7 @@ app.include_router(properties.router, prefix="/api/v1")
 app.include_router(tenants.router, prefix="/api/v1")
 app.include_router(leases.router, prefix="/api/v1")
 app.include_router(lease_break.router, prefix="/api/v1")
+app.include_router(listings.router, prefix="/api/v1")
 app.include_router(public.router, prefix="/api/v1")
 
 

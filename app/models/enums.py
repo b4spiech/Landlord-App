@@ -114,3 +114,34 @@ class EnvelopeStatus(str, Enum):
     completed = "completed"
     declined = "declined"
     voided = "voided"
+
+
+class ListingStatus(str, Enum):
+    draft = "draft"  # being prepared, not public
+    listed = "listed"  # public: shown on the tour site and bookable
+    closed = "closed"  # finished (see ListingCloseReason)
+
+
+class ListingCloseReason(str, Enum):
+    rented = "rented"
+    withdrawn = "withdrawn"
+
+
+class PetPolicy(str, Enum):
+    no_pets = "no_pets"
+    cats_ok = "cats_ok"
+    dogs_ok = "dogs_ok"
+    cats_and_dogs_ok = "cats_and_dogs_ok"
+    case_by_case = "case_by_case"
+
+
+class ListingChannel(str, Enum):
+    zillow_rental_manager = "zillow_rental_manager"
+    facebook_marketplace = "facebook_marketplace"
+    craigslist = "craigslist"
+    apartments_com = "apartments_com"
+    realtor_com = "realtor_com"
+    hotpads = "hotpads"
+    mls = "mls"
+    yard_sign = "yard_sign"
+    other = "other"

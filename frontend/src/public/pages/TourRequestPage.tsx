@@ -1,5 +1,8 @@
 import { useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import { publicApi } from '../publicApi';
+import { useLoad } from '../useLoad';
+import { money } from '../listingFormat';
 import { COMPANY, SMS_CONSENT_TEXT } from '../company';
 
 // The form and SMS opt-in wording are final (Twilio's toll-free verification
@@ -26,6 +29,11 @@ const Label = ({ children, htmlFor }: { children: ReactNode; htmlFor: string }) 
 
 export const TourRequestPage = () => {
   const [submitted, setSubmitted] = useState(false);
+  const [params] = useSearchParams();
+  const { data: listings } = useLoad(publicApi.listings, 'listings');
+  const preselected = params.get('home') ?? '';
+  const [home, setHome] = useState<string | null>(null);
+  const selectedHome = home ?? (listings?.some((l) => l.id === preselected) ? preselected : '');
 
   return (
     <div>
@@ -45,13 +53,27 @@ export const TourRequestPage = () => {
         <div className="space-y-5">
           <div>
             <Label htmlFor="property">Home</Label>
-            <select id="property" className={input} defaultValue="">
+            <select
+              id="property"
+              className={input}
+              value={selectedHome}
+              onChange={(e) => setHome(e.target.value)}
+            >
               <option value="" disabled>
                 Select a home
               </option>
-              <option value="none" disabled>
-                No homes are open for tours right now
-              </option>
+              {listings?.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.address_line1}
+                  {l.address_line2 ? `, ${l.address_line2}` : ''}, {l.city} —{' '}
+                  {money(l.monthly_rent)}/mo
+                </option>
+              ))}
+              {listings && listings.length === 0 && (
+                <option value="none" disabled>
+                  No homes are open for tours right now
+                </option>
+              )}
             </select>
           </div>
 
