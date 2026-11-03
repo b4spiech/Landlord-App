@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker run *)",
+      "Bash(docker exec *)",
+      "Bash(python -c \"from app.database import create_all_tables, engine; create_all_tables\\(\\); print\\('TABLES CREATED OK'\\); from sqlalchemy import inspect; print\\(sorted\\(inspect\\(engine\\).get_table_names\\(\\)\\)\\)\")",
+      "Bash(python -c \"from app.database import create_all_tables, engine; create_all_tables\\(\\); from sqlalchemy import inspect; print\\('TABLES:', sorted\\(inspect\\(engine\\).get_table_names\\(\\)\\)\\)\")",
+      "Bash(python -c \"from app.database import engine; from sqlmodel import SQLModel; import app.models; SQLModel.metadata.drop_all\\(engine\\); print\\('dropped all tables'\\)\")"
+    ]
+  }
+}

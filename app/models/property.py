@@ -1,0 +1,55 @@
+import uuid
+from typing import Optional
+
+from sqlalchemy import Column, LargeBinary
+from sqlmodel import Field
+
+from app.models.base import TimestampMixin
+from app.models.enums import PropertyType
+
+
+class Property(TimestampMixin, table=True):
+    __tablename__ = "property"
+
+    name: str = Field(index=True, max_length=200)
+    property_type: str = Field(default=PropertyType.condo.value, max_length=40)
+
+    address_line1: str = Field(max_length=200)
+    address_line2: Optional[str] = Field(default=None, max_length=200)
+    city: str = Field(max_length=100)
+    state: str = Field(max_length=2, index=True)
+    postal_code: str = Field(max_length=20)
+    # IANA time zone (e.g. America/Phoenix). Tour times are chosen and shown in
+    # the property's local time. Null = derive from state (see services/timezones).
+    time_zone: Optional[str] = Field(default=None, max_length=64)
+
+    # Relationships (foreign keys)
+    owner_id: uuid.UUID = Field(foreign_key="owner.id", index=True)
+    management_company_id: Optional[uuid.UUID] = Field(
+        default=None, foreign_key="management_company.id", index=True
+    )
+    jurisdiction_id: uuid.UUID = Field(foreign_key="jurisdiction.id", index=True)
+    hoa_id: Optional[uuid.UUID] = Field(default=None, foreign_key="hoa.id", index=True)
+
+    year_built: Optional[int] = Field(default=None)
+    bedrooms: Optional[int] = Field(default=None)
+    bathrooms: Optional[float] = Field(default=None)
+    square_feet: Optional[int] = Field(default=None)
+    hoa_name: Optional[str] = Field(default=None, max_length=200)
+    notes: Optional[str] = Field(default=None)
+
+
+class PropertyPhoto(TimestampMixin, table=True):
+    """A property photo. Bytes live in Postgres (the deploy disk is ephemeral).
+
+    Kept in its own table so listing/loading properties doesn't pull image
+    bytes into memory.
+    """
+
+    __tablename__ = "property_photo"
+
+    property_id: uuid.UUID = Field(foreign_key="property.id", index=True)
+    filename: Optional[str] = Field(default=None, max_length=255)
+    content_type: Optional[str] = Field(default=None, max_length=120)
+    file_size: Optional[int] = Field(default=None)
+    content: bytes = Field(sa_column=Column(LargeBinary, nullable=False))

@@ -1,0 +1,51 @@
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Navigation } from './components/Navigation';
+import { Dashboard } from './pages/Dashboard';
+import { PropertiesPage } from './pages/PropertiesPage';
+import { PropertyDetail } from './pages/PropertyDetail';
+import { LeasesPage } from './pages/LeasesPage';
+import { LeaseImportPage } from './pages/LeaseImportPage';
+import { LeaseDetail } from './pages/LeaseDetail';
+import { OwnersPage } from './pages/OwnersPage';
+import { ManagementCompaniesPage } from './pages/ManagementCompaniesPage';
+import { TenantsPage } from './pages/TenantsPage';
+import { HOAsPage } from './pages/HOAsPage';
+import { HOADetail } from './pages/HOADetail';
+import { LeaseBreakPage } from './pages/LeaseBreakPage';
+import { ListingEditor } from './pages/ListingEditor';
+import { TourRequestsPage } from './pages/TourRequestsPage';
+import { TourRequestDetail } from './pages/TourRequestDetail';
+import { ApprovalsPage } from './pages/ApprovalsPage';
+import { NotFound } from './pages/NotFound';
+
+function App() {
+  return (
+    <Router>
+      <Navigation />
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/properties" element={<PropertiesPage />} />
+          <Route path="/properties/:id" element={<PropertyDetail />} />
+          <Route path="/listings/:id" element={<ListingEditor />} />
+          <Route path="/tour-requests" element={<TourRequestsPage />} />
+          <Route path="/tour-requests/:id" element={<TourRequestDetail />} />
+          <Route path="/leases" element={<LeasesPage />} />
+          <Route path="/leases/import" element={<LeaseImportPage />} />
+          <Route path="/leases/:id" element={<LeaseDetail />} />
+          <Route path="/owners" element={<OwnersPage />} />
+          <Route path="/management-companies" element={<ManagementCompaniesPage />} />
+          <Route path="/tenants" element={<TenantsPage />} />
+          <Route path="/hoas" element={<HOAsPage />} />
+          <Route path="/hoas/:id" element={<HOADetail />} />
+          <Route path="/lease-breaks" element={<LeaseBreakPage />} />
+          <Route path="/lease-breaks/:requestId" element={<LeaseBreakPage />} />
+          <Route path="/approvals" element={<ApprovalsPage />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </main>
+    </Router>
+  );
+}
+
+export default App;
