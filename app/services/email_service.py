@@ -99,7 +99,10 @@ async def send_email(
             port=settings.SMTP_PORT,
             username=settings.SMTP_USER,
             password=settings.SMTP_PASSWORD,
-            start_tls=True,
+            # Port 465 (e.g. Cloudflare Email Service) uses implicit TLS;
+            # 587 (e.g. Gmail) upgrades via STARTTLS.
+            use_tls=settings.SMTP_PORT == 465,
+            start_tls=settings.SMTP_PORT != 465,
         )
     except Exception as exc:
         raise EmailError(f"Email sending failed: {exc}") from exc
