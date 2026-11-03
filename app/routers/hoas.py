@@ -70,21 +70,7 @@ def update_hoa(hoa_id: uuid.UUID, payload: HOAUpdate, session: Session = Depends
     return hoa
 
 
-@router.delete("/{hoa_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_hoa(hoa_id: uuid.UUID, session: Session = Depends(get_session)):
-    hoa = get_or_404(session, HOA, hoa_id, "HOA")
-    linked = session.exec(select(Property).where(Property.hoa_id == hoa_id)).first()
-    if linked is not None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="HOA is linked to one or more properties; unlink them first.",
-        )
-    # Remove its documents, then the HOA.
-    for doc in session.exec(select(HOADocument).where(HOADocument.hoa_id == hoa_id)).all():
-        session.delete(doc)
-    session.delete(hoa)
-    session.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+# Deleting an HOA lives in routers/deletions.py (preview + unlink properties).
 
 
 # --- Documents -------------------------------------------------------------

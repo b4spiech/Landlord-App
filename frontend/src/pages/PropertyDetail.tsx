@@ -9,6 +9,7 @@ import { LeaseForm } from '../components/LeaseForm';
 import { PropertyPhotoCard } from '../components/PropertyPhotoCard';
 import { ListingCard } from '../components/ListingCard';
 import { AccessCodesCard } from '../components/AccessCodesCard';
+import { DeleteButton } from '../components/ConfirmDelete';
 import { StatusBadge } from '../components/StatusBadge';
 import {
   formatCurrency,
@@ -50,9 +51,12 @@ export const PropertyDetail = () => {
         title={property.name}
         subtitle={`${property.address_line1}${property.address_line2 ? ', ' + property.address_line2 : ''}, ${property.city}, ${property.state} ${property.postal_code}`}
         action={
-          <Button variant="secondary" onClick={() => setEditOpen(true)}>
-            Edit
-          </Button>
+          <div className="flex gap-3">
+            <Button variant="secondary" onClick={() => setEditOpen(true)}>
+              Edit
+            </Button>
+            <DeleteButton kind="properties" id={property.id} onDeleted={() => navigate('/properties')} />
+          </div>
         }
       />
 
@@ -69,7 +73,7 @@ export const PropertyDetail = () => {
           </div>
           <div className="flex justify-between">
             <dt className="text-gray-500">HOA</dt>
-            <dd>
+            <dd className="text-right">
               {hoa ? (
                 <Link to={`/hoas/${hoa.id}`} className="text-blue-600 hover:underline">
                   {hoa.name}
@@ -77,6 +81,12 @@ export const PropertyDetail = () => {
               ) : (
                 '—'
               )}
+              <button
+                onClick={() => setEditOpen(true)}
+                className="ml-3 text-xs text-gray-500 hover:text-blue-600 hover:underline"
+              >
+                {hoa ? 'Change' : 'Set'}
+              </button>
             </dd>
           </div>
           <div className="flex justify-between">

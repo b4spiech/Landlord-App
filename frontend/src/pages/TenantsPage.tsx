@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { tenantAPI } from '../services/api';
 import { useAsync } from '../lib/useAsync';
+import { DeleteButton } from '../components/ConfirmDelete';
 import type { Tenant } from '../types';
 import { Button, Card, EmptyState, ErrorState, PageHeader, Spinner } from '../components/ui';
 import { Modal } from '../components/Modal';
@@ -54,9 +55,12 @@ export const TenantsPage = () => {
                   <td className="px-5 py-3 text-gray-600">{t.email ?? '—'}</td>
                   <td className="px-5 py-3 text-gray-600">{t.phone ?? '—'}</td>
                   <td className="px-5 py-3 text-right">
-                    <button onClick={() => openEdit(t)} className="text-blue-600 hover:underline">
-                      Edit
-                    </button>
+                    <span className="inline-flex gap-4">
+                      <button onClick={() => openEdit(t)} className="text-blue-600 hover:underline">
+                        Edit
+                      </button>
+                      <DeleteButton kind="tenants" id={t.id} onDeleted={reload} variant="link" />
+                    </span>
                   </td>
                 </tr>
               ))}

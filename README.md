@@ -46,13 +46,32 @@ one PostgreSQL database serve two sites:
   pending signature). Expired, terminated and broken leases are archived: they
   stay in *Leases → Archived* (filterable by property) and nothing is deleted.
 - **Lease break** buyout workflow with document preview, explicit email send
-  approval, and DocuSign e-signature routing.
+  approval, and DocuSign e-signature routing. *Leases → Lease Breaks* lists
+  every request (and each lease page shows its own); opening one shows the
+  request, options and documents, with **Delete**.
 - **Listings:** *List this property* → listing editor (rent, deposit, available
   date, minimum lease, pets, utilities, description, private notes), ordered
   photos (first = cover), and where it's advertised (Zillow Rental Manager,
   Facebook, Craigslist, …, with URL + date). Status: Draft → Listed → Closed
   (rented / withdrawn). One open listing per property. If a listing has no
   photos of its own, the public site uses the property's photo as the cover.
+
+- **Deleting records** (properties, HOAs, owners, management companies,
+  tenants, leases): a **Delete** button opens a warning that asks the server
+  what would happen and lists it, and the delete button only unlocks after
+  typing `DELETE`. Rules — financial/legal history is never removed silently:
+
+  | Deleting a… | Blocked while it has… | Also deletes | Unlinks |
+  |---|---|---|---|
+  | Property | leases, expenses | its photo, listings + photos, door codes, tour requests (+ photo IDs, feedback, message log) | — |
+  | HOA | — | its documents | properties (HOA becomes none) |
+  | Owner | properties | — | — |
+  | Management company | — | — | properties |
+  | Tenant | any lease | — | — |
+  | Lease | payments, a *signed* lease-break agreement | uploaded lease documents, unsigned lease-break requests (+ options, agreements, email drafts) | its tenants (tenant records kept) |
+  | Lease break | a signed agreement | its options, generated agreements, email drafts | — |
+- A property's HOA is changed in *Edit* (or the **Change/Set** link next to the
+  HOA on the property page); choose *None* to remove it.
 
 **Public site**
 - Company homepage with currently listed homes. Each home card has **Request a
@@ -175,9 +194,10 @@ Landlord APIs (require Cloudflare Access when enabled; 404 on public hosts):
 | Properties | `/api/v1/properties` | filters `owner_id`, `management_company_id`; `/photo` |
 | Tenants | `/api/v1/tenants` | |
 | Leases | `/api/v1/leases` | filter `property_id`; nested `lease_tenants` on create; `property_id` must exist and can be changed, never cleared; document import |
-| Lease breaks | `/api/v1/lease-breaks` | workflow; `/webhook/docusign` (HMAC-verified, no Access JWT) |
+| Lease breaks | `/api/v1/lease-breaks` | `GET` list (filter `lease_id`); workflow; `/webhook/docusign` (HMAC-verified, no Access JWT) |
 | Listings | `/api/v1/listings` | filters `property_id`, `status_filter`, `open_only`; `/publish`, `/unpublish`, `/close`, `/photos` |
 | Door codes | `/api/v1/properties/{id}/access-codes` | `GET` (counts + active codes; `?history=true` adds sent), `POST` bulk add; `DELETE /api/v1/access-codes/{id}` (available only) |
+| Deletes | `/api/v1/{kind}/{id}/delete-preview` (GET), `/api/v1/{kind}/{id}` (DELETE) for `properties`, `hoas`, `owners`, `management-companies`, `tenants`, `leases`, `lease-breaks` | preview lists blockers / also-deletes / unlinks; DELETE returns 409 if blocked |
 | Tour requests | `/api/v1/tour-requests` | filters `status_filter`, `property_id`; `/{id}/id-photo` (no-store), `/{id}/notifications`; `POST /{id}/approve`, `/decline`, `/cancel` (body `{note}`), `/send-code` |
 
 Public API (anonymous; only live listings and safe fields):
@@ -232,7 +252,8 @@ the door-code lifecycle (reserve/release/issue, expiry, no reuse), and
 approve/decline/cancel/send-code with the exact visitor messages, and the
 scheduler (send timing, retries + landlord alerts, completion + feedback
 requests, photo-ID deletion), the feedback form, and visitor email sign-in
-(codes, lockout, expiry, rate limits, cookie flags, hashed storage).
+(codes, lockout, expiry, rate limits, cookie flags, hashed storage), and
+record deletion (previews, blockers, cascades, unlinking).
 `tests/conftest.py` provides `sign_in(client, email)` for tests that submit tours. `tests/conftest.py` turns
 the background loop off; tests call `run_due_jobs(now)` directly.
 
@@ -252,6 +273,21 @@ and the lease-break document templates.
 
 ## Deployment
 
-Railway runs the `Procfile` (`alembic upgrade head`, seed, then uvicorn). DNS,
-TLS, Access and email sending are on Cloudflare (`apexelementgrp.com` zone).
-Pushing `dev` deploys.
+Two Railway environments, each with its own Postgres database. Each deploy runs
+the `Procfile` (`alembic upgrade head`, seed, then uvicorn).
+
+| Environment | Branch | Public site | Landlord app |
+|-------------|--------|-------------|--------------|
+| **Production** | `main` | `apexelementgrp.com`, `www.`, `tours.` | `app.apexelementgrp.com` |
+| **Staging** | `dev` | `dev-tours.apexelementgrp.com` (behind Cloudflare Access) | `dev-app.apexelementgrp.com` |
+
+Workflow: push to `dev` → test on staging → open a PR `dev` → `main` to release.
+
+One Cloudflare Access application protects `app.`, `dev-app.` and `dev-tours.`
+(same AUD tag, so `CF_ACCESS_AUD` is identical in both environments). DNS, TLS,
+Access and email sending are on Cloudflare (`apexelementgrp.com` zone).
+
+Per-environment variables (everything else is shared): `DATABASE_URL`,
+`PUBLIC_HOSTS`, `PUBLIC_SITE_URL`, `LANDLORD_APP_URL`, `ALLOWED_ORIGINS`, and
+`DOCUSIGN_*` (demo vs production). The code defaults to the production
+hostnames, so staging must set these explicitly.
