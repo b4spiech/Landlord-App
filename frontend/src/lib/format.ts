@@ -45,3 +45,8 @@ export function leaseStatusVariant(status: LeaseStatus): Variant {
       return 'gray';
   }
 }
+
+// Leases that are finished. They stay in the system (Leases > Archived) but
+// no longer show on the property page.
+export const ARCHIVED_LEASE_STATUSES: LeaseStatus[] = ['expired', 'terminated', 'broken'];
+export const isArchivedLease = (status: LeaseStatus) => ARCHIVED_LEASE_STATUSES.includes(status);

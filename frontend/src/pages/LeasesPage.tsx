@@ -1,21 +1,23 @@
 import { useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { leaseAPI, propertyAPI } from '../services/api';
 import { useAsync } from '../lib/useAsync';
-import type { LeaseStatus } from '../types';
 import { Button, Card, EmptyState, ErrorState, PageHeader, Spinner } from '../components/ui';
 import { Modal } from '../components/Modal';
 import { LeaseForm } from '../components/LeaseForm';
 import { StatusBadge } from '../components/StatusBadge';
-import { formatCurrency, formatDate, leaseStatusVariant } from '../lib/format';
+import { formatCurrency, formatDate, isArchivedLease, leaseStatusVariant } from '../lib/format';
 
-const FILTERS: { value: '' | LeaseStatus; label: string }[] = [
-  { value: '', label: 'All' },
+// "Current" = active, draft, pending signature. "Archived" = expired,
+// terminated, broken (kept for records, hidden from property pages).
+type View = 'current' | 'active' | 'draft' | 'pending_signature' | 'archived' | 'all';
+const FILTERS: { value: View; label: string }[] = [
+  { value: 'current', label: 'Current' },
   { value: 'active', label: 'Active' },
   { value: 'draft', label: 'Draft' },
   { value: 'pending_signature', label: 'Pending' },
-  { value: 'expired', label: 'Expired' },
-  { value: 'terminated', label: 'Terminated' },
+  { value: 'archived', label: 'Archived' },
+  { value: 'all', label: 'All' },
 ];
 
 export const LeasesPage = () => {
@@ -23,12 +25,32 @@ export const LeasesPage = () => {
   const { data, loading, error, reload } = useAsync(() => leaseAPI.list());
   const { data: properties } = useAsync(() => propertyAPI.list());
   const propertyName = (id: string) => properties?.find((p) => p.id === id)?.name ?? '…';
-  const [filter, setFilter] = useState<'' | LeaseStatus>('');
+  const [params, setParams] = useSearchParams();
+  const filter = (FILTERS.some((f) => f.value === params.get('view')) ? params.get('view') : 'current') as View;
+  const propertyFilter = params.get('property');
+  const setFilter = (v: View) =>
+    setParams((p) => {
+      p.set('view', v);
+      return p;
+    });
+  const clearProperty = () =>
+    setParams((p) => {
+      p.delete('property');
+      return p;
+    });
   const [modalOpen, setModalOpen] = useState(false);
 
   const filtered = useMemo(
-    () => (data ?? []).filter((l) => (filter ? l.status === filter : true)),
-    [data, filter],
+    () =>
+      (data ?? [])
+        .filter((l) => !propertyFilter || l.property_id === propertyFilter)
+        .filter((l) => {
+          if (filter === 'all') return true;
+          if (filter === 'archived') return isArchivedLease(l.status);
+          if (filter === 'current') return !isArchivedLease(l.status);
+          return l.status === filter;
+        }),
+    [data, filter, propertyFilter],
   );
 
   const handleSaved = () => {
@@ -74,6 +96,14 @@ export const LeasesPage = () => {
             {f.label}
           </button>
         ))}
+        {propertyFilter && (
+          <button
+            onClick={clearProperty}
+            className="px-3 py-1.5 rounded text-sm font-medium bg-blue-50 text-blue-700 border border-blue-200"
+          >
+            Property: {propertyName(propertyFilter)} ✕
+          </button>
+        )}
       </div>
 
       {loading && <Spinner />}

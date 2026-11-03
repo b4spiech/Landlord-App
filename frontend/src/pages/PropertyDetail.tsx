@@ -9,7 +9,13 @@ import { LeaseForm } from '../components/LeaseForm';
 import { PropertyPhotoCard } from '../components/PropertyPhotoCard';
 import { ListingCard } from '../components/ListingCard';
 import { StatusBadge } from '../components/StatusBadge';
-import { formatCurrency, formatDate, leaseStatusVariant, propertyTypeLabel } from '../lib/format';
+import {
+  formatCurrency,
+  formatDate,
+  isArchivedLease,
+  leaseStatusVariant,
+  propertyTypeLabel,
+} from '../lib/format';
 
 export const PropertyDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -19,17 +25,20 @@ export const PropertyDetail = () => {
   const { data, loading, error, reload } = useAsync(async () => {
     const property = await propertyAPI.get(id!);
     const leaseList = await leaseAPI.list({ property_id: id });
+    // Only current leases show here; finished ones are archived (Leases > Archived).
+    const current = leaseList.filter((l) => !isArchivedLease(l.status));
+    const archivedCount = leaseList.length - current.length;
     // Fetch each lease's detail to include tenant names (usually just one).
-    const leases = await Promise.all(leaseList.map((l) => leaseAPI.get(l.id)));
+    const leases = await Promise.all(current.map((l) => leaseAPI.get(l.id)));
     const hoa = property.hoa_id ? await hoaAPI.get(property.hoa_id) : null;
-    return { property, leases, hoa };
+    return { property, leases, archivedCount, hoa };
   }, [id]);
 
   if (loading) return <Spinner />;
   if (error) return <ErrorState message={error} onRetry={reload} />;
   if (!data) return null;
 
-  const { property, leases, hoa } = data;
+  const { property, leases, archivedCount, hoa } = data;
 
   return (
     <div>
@@ -147,7 +156,7 @@ export const PropertyDetail = () => {
           </button>
         </div>
         <div className="divide-y divide-gray-100">
-          {leases.length === 0 && <p className="px-5 py-6 text-sm text-gray-500">No leases.</p>}
+          {leases.length === 0 && <p className="px-5 py-6 text-sm text-gray-500">No current leases.</p>}
           {leases.map((l) => {
             const tenantNames = l.tenants.map((t) => `${t.first_name} ${t.last_name}`).join(', ');
             return (
@@ -168,6 +177,16 @@ export const PropertyDetail = () => {
             );
           })}
         </div>
+        {archivedCount > 0 && (
+          <div className="px-5 py-3 border-t border-gray-100 text-sm">
+            <Link
+              to={`/leases?property=${property.id}&view=archived`}
+              className="text-gray-500 hover:text-blue-600 hover:underline"
+            >
+              View {archivedCount} archived lease{archivedCount === 1 ? '' : 's'} →
+            </Link>
+          </div>
+        )}
       </Card>
        </div>
 
