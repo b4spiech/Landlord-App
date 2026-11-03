@@ -6,7 +6,8 @@ one PostgreSQL database serve two sites:
 | Site | Hostnames | Who | Protection |
 |------|-----------|-----|------------|
 | **Landlord app** | `dev-app.apexelementgrp.com` | Owner/manager | Cloudflare Access login + JWT check in the backend |
-| - **Door codes** (property page → *Door codes*): paste one-time codes from the
+| - **Door codes** (property page → *Door codes*, collapsed to a one-line summary
+  until clicked; the low-stock warning always shows): paste one-time codes from the
   lock's app (one per line or comma-separated; 3–20 digits/letters/`*`/`#`),
   with an optional expiry date and note. Codes go **Available → Held** (reserved
   for an approved tour) **→ Sent** (issued; never reused). Sent codes leave the

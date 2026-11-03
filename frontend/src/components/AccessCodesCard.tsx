@@ -19,6 +19,7 @@ const statusVariant = (s: AccessCode['status']) =>
 /** Property-page card: the property's pool of one-time door codes. */
 export const AccessCodesCard = ({ propertyId }: { propertyId: string }) => {
   const toast = useToast();
+  const [open, setOpen] = useState(false); // collapsed by default: rarely needed
   const [showHistory, setShowHistory] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const { data, loading, reload } = useAsync(
@@ -43,15 +44,36 @@ export const AccessCodesCard = ({ propertyId }: { propertyId: string }) => {
 
   return (
     <Card>
-      <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
-        <div>
-          <h2 className="font-semibold text-gray-900">Door codes</h2>
-          {data && (
-            <p className="text-xs text-gray-500 mt-0.5">
-              {data.available} available · {data.reserved} held for tours · {data.issued} sent
-            </p>
-          )}
-        </div>
+      <div
+        className={`px-5 py-4 flex items-center justify-between gap-3 ${open ? 'border-b border-gray-200' : ''}`}
+      >
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          className="flex flex-1 items-start gap-2 text-left"
+        >
+          <svg
+            className={`mt-1 h-4 w-4 shrink-0 text-gray-400 transition-transform ${open ? 'rotate-90' : ''}`}
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              fillRule="evenodd"
+              d="M7.21 14.77a.75.75 0 01.02-1.06L11.17 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
+              clipRule="evenodd"
+            />
+          </svg>
+          <span>
+            <h2 className="font-semibold text-gray-900">Door codes</h2>
+            {data && (
+              <p className="text-xs text-gray-500 mt-0.5">
+                {data.available} available · {data.reserved} held for tours · {data.issued} sent
+              </p>
+            )}
+          </span>
+        </button>
         <Button variant="secondary" onClick={() => setAddOpen(true)}>
           + Add codes
         </Button>
@@ -65,88 +87,96 @@ export const AccessCodesCard = ({ propertyId }: { propertyId: string }) => {
         </div>
       )}
 
-      {loading && !data && <p className="px-5 py-4 text-sm text-gray-500">Loading…</p>}
-      {data && active.length === 0 && (
-        <p className="px-5 py-4 text-sm text-gray-500">
-          No codes loaded. Create one-time codes in your lock's app, then add them here. Each
-          approved tour gets one, sent 30 minutes before the tour.
-        </p>
-      )}
+      {open && (
+        <>
+          {loading && !data && <p className="px-5 py-4 text-sm text-gray-500">Loading…</p>}
+          {data && active.length === 0 && (
+            <p className="px-5 py-4 text-sm text-gray-500">
+              No codes loaded. Create one-time codes in your lock's app, then add them here. Each
+              approved tour gets one, sent 30 minutes before the tour.
+            </p>
+          )}
 
-      {active.length > 0 && (
-        <ul className="divide-y divide-gray-100">
-          {active.map((c) => (
-            <li key={c.id} className="px-5 py-3 flex items-center justify-between gap-4 text-sm">
-              <div className="min-w-0">
-                <p className="font-mono text-base tracking-wider text-gray-900">{c.code}</p>
-                <p className="text-xs text-gray-500">
-                  {c.status === 'reserved' && c.tour_request_id ? (
-                    <>
-                      Held for{' '}
-                      <Link
-                        to={`/tour-requests/${c.tour_request_id}`}
-                        className="text-blue-600 hover:underline"
+          {active.length > 0 && (
+            <ul className="divide-y divide-gray-100">
+              {active.map((c) => (
+                <li
+                  key={c.id}
+                  className="px-5 py-3 flex items-center justify-between gap-4 text-sm"
+                >
+                  <div className="min-w-0">
+                    <p className="font-mono text-base tracking-wider text-gray-900">{c.code}</p>
+                    <p className="text-xs text-gray-500">
+                      {c.status === 'reserved' && c.tour_request_id ? (
+                        <>
+                          Held for{' '}
+                          <Link
+                            to={`/tour-requests/${c.tour_request_id}`}
+                            className="text-blue-600 hover:underline"
+                          >
+                            {c.tour_visitor}
+                          </Link>
+                        </>
+                      ) : (
+                        `Added ${fmtDateTime(c.created_at)}`
+                      )}
+                      {c.expires_on ? ` · expires ${formatCalendarDate(c.expires_on)}` : ''}
+                      {c.note ? ` · ${c.note}` : ''}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <StatusBadge
+                      status={c.status === 'reserved' ? 'Held' : 'Available'}
+                      variant={statusVariant(c.status)}
+                    />
+                    {c.status === 'available' && (
+                      <button
+                        onClick={() => remove(c)}
+                        className="text-xs text-red-600 hover:underline"
                       >
-                        {c.tour_visitor}
-                      </Link>
-                    </>
-                  ) : (
-                    `Added ${fmtDateTime(c.created_at)}`
-                  )}
-                  {c.expires_on ? ` · expires ${formatCalendarDate(c.expires_on)}` : ''}
-                  {c.note ? ` · ${c.note}` : ''}
-                </p>
-              </div>
-              <div className="flex items-center gap-3 shrink-0">
-                <StatusBadge
-                  status={c.status === 'reserved' ? 'Held' : 'Available'}
-                  variant={statusVariant(c.status)}
-                />
-                {c.status === 'available' && (
-                  <button
-                    onClick={() => remove(c)}
-                    className="text-xs text-red-600 hover:underline"
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {data && data.issued > 0 && (
-        <div className="px-5 py-3 border-t border-gray-100 text-sm">
-          <button
-            onClick={() => setShowHistory((v) => !v)}
-            className="text-gray-500 hover:text-blue-600 hover:underline"
-          >
-            {showHistory ? 'Hide' : 'Show'} {data.issued} sent code{data.issued === 1 ? '' : 's'}
-          </button>
-          {showHistory && (
-            <ul className="mt-2 space-y-1">
-              {issued.map((c) => (
-                <li key={c.id} className="flex justify-between gap-4 text-xs text-gray-500">
-                  <span className="font-mono text-gray-700">{c.code}</span>
-                  <span>
-                    Sent {fmtDateTime(c.issued_at)} to{' '}
-                    {c.tour_request_id ? (
-                      <Link
-                        to={`/tour-requests/${c.tour_request_id}`}
-                        className="text-blue-600 hover:underline"
-                      >
-                        {c.tour_visitor}
-                      </Link>
-                    ) : (
-                      '—'
+                        Remove
+                      </button>
                     )}
-                  </span>
+                  </div>
                 </li>
               ))}
             </ul>
           )}
-        </div>
+
+          {data && data.issued > 0 && (
+            <div className="px-5 py-3 border-t border-gray-100 text-sm">
+              <button
+                onClick={() => setShowHistory((v) => !v)}
+                className="text-gray-500 hover:text-blue-600 hover:underline"
+              >
+                {showHistory ? 'Hide' : 'Show'} {data.issued} sent code
+                {data.issued === 1 ? '' : 's'}
+              </button>
+              {showHistory && (
+                <ul className="mt-2 space-y-1">
+                  {issued.map((c) => (
+                    <li key={c.id} className="flex justify-between gap-4 text-xs text-gray-500">
+                      <span className="font-mono text-gray-700">{c.code}</span>
+                      <span>
+                        Sent {fmtDateTime(c.issued_at)} to{' '}
+                        {c.tour_request_id ? (
+                          <Link
+                            to={`/tour-requests/${c.tour_request_id}`}
+                            className="text-blue-600 hover:underline"
+                          >
+                            {c.tour_visitor}
+                          </Link>
+                        ) : (
+                          '—'
+                        )}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </>
       )}
 
       <Modal open={addOpen} title="Add door codes" onClose={() => setAddOpen(false)}>
