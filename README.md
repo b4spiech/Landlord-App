@@ -46,7 +46,9 @@ one PostgreSQL database serve two sites:
   pending signature). Expired, terminated and broken leases are archived: they
   stay in *Leases → Archived* (filterable by property) and nothing is deleted.
 - **Lease break** buyout workflow with document preview, explicit email send
-  approval, and DocuSign e-signature routing.
+  approval, and DocuSign e-signature routing. *Leases → Lease Breaks* lists
+  every request (and each lease page shows its own); opening one shows the
+  request, options and documents, with **Delete**.
 - **Listings:** *List this property* → listing editor (rent, deposit, available
   date, minimum lease, pets, utilities, description, private notes), ordered
   photos (first = cover), and where it's advertised (Zillow Rental Manager,
@@ -66,7 +68,8 @@ one PostgreSQL database serve two sites:
   | Owner | properties | — | — |
   | Management company | — | — | properties |
   | Tenant | any lease | — | — |
-  | Lease | payments, lease-break requests | uploaded lease documents | its tenants (tenant records kept) |
+  | Lease | payments, a *signed* lease-break agreement | uploaded lease documents, unsigned lease-break requests (+ options, agreements, email drafts) | its tenants (tenant records kept) |
+  | Lease break | a signed agreement | its options, generated agreements, email drafts | — |
 - A property's HOA is changed in *Edit* (or the **Change/Set** link next to the
   HOA on the property page); choose *None* to remove it.
 
@@ -191,10 +194,10 @@ Landlord APIs (require Cloudflare Access when enabled; 404 on public hosts):
 | Properties | `/api/v1/properties` | filters `owner_id`, `management_company_id`; `/photo` |
 | Tenants | `/api/v1/tenants` | |
 | Leases | `/api/v1/leases` | filter `property_id`; nested `lease_tenants` on create; `property_id` must exist and can be changed, never cleared; document import |
-| Lease breaks | `/api/v1/lease-breaks` | workflow; `/webhook/docusign` (HMAC-verified, no Access JWT) |
+| Lease breaks | `/api/v1/lease-breaks` | `GET` list (filter `lease_id`); workflow; `/webhook/docusign` (HMAC-verified, no Access JWT) |
 | Listings | `/api/v1/listings` | filters `property_id`, `status_filter`, `open_only`; `/publish`, `/unpublish`, `/close`, `/photos` |
 | Door codes | `/api/v1/properties/{id}/access-codes` | `GET` (counts + active codes; `?history=true` adds sent), `POST` bulk add; `DELETE /api/v1/access-codes/{id}` (available only) |
-| Deletes | `/api/v1/{kind}/{id}/delete-preview` (GET), `/api/v1/{kind}/{id}` (DELETE) for `properties`, `hoas`, `owners`, `management-companies`, `tenants`, `leases` | preview lists blockers / also-deletes / unlinks; DELETE returns 409 if blocked |
+| Deletes | `/api/v1/{kind}/{id}/delete-preview` (GET), `/api/v1/{kind}/{id}` (DELETE) for `properties`, `hoas`, `owners`, `management-companies`, `tenants`, `leases`, `lease-breaks` | preview lists blockers / also-deletes / unlinks; DELETE returns 409 if blocked |
 | Tour requests | `/api/v1/tour-requests` | filters `status_filter`, `property_id`; `/{id}/id-photo` (no-store), `/{id}/notifications`; `POST /{id}/approve`, `/decline`, `/cancel` (body `{note}`), `/send-code` |
 
 Public API (anonymous; only live listings and safe fields):

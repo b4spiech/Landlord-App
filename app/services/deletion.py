@@ -17,12 +17,16 @@ from sqlalchemy import delete as sa_delete
 from sqlalchemy import update as sa_update
 from sqlmodel import Session, func, select
 
+from app.models.enums import DocumentStatus, LeaseBreakStatus
 from app.models import (
     HOA,
     AccessCode,
+    EmailApproval,
     Expense,
     HOADocument,
     Lease,
+    LeaseBreakDocument,
+    LeaseBreakOption,
     LeaseBreakRequest,
     LeaseDocument,
     LeaseTenant,
@@ -180,19 +184,62 @@ def plan_lease(session: Session, lease_id: uuid.UUID) -> DeletePlan:
     plan = DeletePlan("lease", f"{prop.name if prop else 'Lease'} · {lease.start_date} → {lease.end_date}")
     if n := _count(session, Payment, Payment.lease_id == lease_id):
         plan.blockers.append(f"it has {_n(n, 'payment')} recorded")
-    if n := _count(session, LeaseBreakRequest, LeaseBreakRequest.lease_id == lease_id):
-        plan.blockers.append(f"it has {_n(n, 'lease-break request')}")
+    breaks = list(session.exec(select(LeaseBreakRequest).where(LeaseBreakRequest.lease_id == lease_id)).all())
+    signed = [b for b in breaks if lease_break_is_signed(session, b)]
+    if signed:
+        plan.blockers.append(f"it has {_n(len(signed), 'signed lease-break agreement')} (legal record)")
+    elif breaks:
+        plan.also_deletes.append(_n(len(breaks), "lease-break request") + " (with their options, agreements and email drafts)")
     if n := _count(session, LeaseTenant, LeaseTenant.lease_id == lease_id):
         plan.unlinks.append(f"{_n(n, 'tenant')} will be removed from this lease (the tenant records stay)")
     if n := _count(session, LeaseDocument, LeaseDocument.lease_id == lease_id):
         plan.also_deletes.append(_n(n, "uploaded lease document"))
 
     def run():
+        for b in breaks:
+            _delete_lease_break_rows(session, b)
         session.exec(sa_delete(LeaseTenant).where(LeaseTenant.lease_id == lease_id))
         session.exec(sa_delete(LeaseDocument).where(LeaseDocument.lease_id == lease_id))
         session.delete(lease)
 
     plan._steps.append(run)
+    return plan
+
+
+def lease_break_is_signed(session: Session, req: LeaseBreakRequest) -> bool:
+    """A signed/completed termination agreement is a legal record we never delete."""
+    if req.status in (LeaseBreakStatus.signed.value, LeaseBreakStatus.completed.value):
+        return True
+    return _count(session, LeaseBreakDocument, LeaseBreakDocument.lease_break_request_id == req.id,
+                  LeaseBreakDocument.status == DocumentStatus.signed.value) > 0
+
+
+def _delete_lease_break_rows(session: Session, req: LeaseBreakRequest) -> None:
+    # selected_option_id points at an option; clear it before deleting options.
+    req.selected_option_id = None
+    session.add(req)
+    session.flush()
+    for model in (EmailApproval, LeaseBreakDocument, LeaseBreakOption):
+        session.exec(sa_delete(model).where(model.lease_break_request_id == req.id))
+    # Delete immediately (not at commit) so it's gone before its lease is deleted.
+    session.exec(sa_delete(LeaseBreakRequest).where(LeaseBreakRequest.id == req.id))
+    session.expunge(req)
+
+
+def plan_lease_break(session: Session, request_id: uuid.UUID) -> DeletePlan:
+    req = _get(session, LeaseBreakRequest, request_id, "Lease break request")
+    lease = session.get(Lease, req.lease_id)
+    prop = session.get(Property, lease.property_id) if lease else None
+    plan = DeletePlan("lease_break", f"{prop.name if prop else 'Lease'} · move-out {req.desired_move_out_date}")
+    if lease_break_is_signed(session, req):
+        plan.blockers.append("its termination agreement has been signed (legal record)")
+    if n := _count(session, LeaseBreakOption, LeaseBreakOption.lease_break_request_id == request_id):
+        plan.also_deletes.append(_n(n, "buyout option"))
+    if n := _count(session, LeaseBreakDocument, LeaseBreakDocument.lease_break_request_id == request_id):
+        plan.also_deletes.append(_n(n, "generated agreement"))
+    if n := _count(session, EmailApproval, EmailApproval.lease_break_request_id == request_id):
+        plan.also_deletes.append(_n(n, "email draft"))
+    plan._steps.append(lambda: _delete_lease_break_rows(session, req))
     return plan
 
 
@@ -203,4 +250,5 @@ PLANNERS = {
     "management-companies": plan_management_company,
     "tenants": plan_tenant,
     "leases": plan_lease,
+    "lease-breaks": plan_lease_break,
 }

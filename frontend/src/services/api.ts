@@ -129,7 +129,14 @@ export const accessCodeAPI = {
   remove: (codeId: string) => api.delete(`/access-codes/${codeId}`),
 };
 
-export type DeletableKind = 'properties' | 'hoas' | 'owners' | 'management-companies' | 'tenants' | 'leases';
+export type DeletableKind =
+  | 'properties'
+  | 'hoas'
+  | 'owners'
+  | 'management-companies'
+  | 'tenants'
+  | 'leases'
+  | 'lease-breaks';
 
 export interface DeletePreview {
   kind: string;
@@ -232,7 +239,23 @@ export const hoaDocumentAPI = {
   remove: (hoaId: string, docId: string) => api.delete(`/hoas/${hoaId}/documents/${docId}`),
 };
 
+export interface LeaseBreakSummary {
+  id: string;
+  created_at: string;
+  lease_id: string;
+  property_id: string;
+  property_name: string;
+  tenant_names: string;
+  status: string;
+  requested_date: string;
+  desired_move_out_date: string;
+  selected_option_label?: string | null;
+  cash_due_at_signing?: number | null;
+  has_signed_agreement: boolean;
+}
+
 export const leaseBreakAPI = {
+  list: (params?: { lease_id?: string }) => data<LeaseBreakSummary[]>(api.get('/lease-breaks', { params })),
   initiate: (body: { lease_id: string; desired_move_out_date: string; reason?: string }) =>
     data<LeaseBreakRequest>(api.post('/lease-breaks/initiate', body)),
   get: (requestId: string) => data<LeaseBreakDetail>(api.get(`/lease-breaks/${requestId}`)),

@@ -4,6 +4,7 @@ import hmac
 import json
 import logging
 import uuid
+from typing import Optional
 from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
@@ -34,6 +35,7 @@ from app.schemas.lease_break import (
     LeaseBreakDocumentRead,
     LeaseBreakOptionRead,
     LeaseBreakRequestRead,
+    LeaseBreakSummary,
     RouteForSignatureRequest,
     RouteForSignatureResult,
     SelectOptionRequest,
@@ -232,6 +234,36 @@ def calculate_options(
     for o in options:
         session.refresh(o)
     return options
+
+
+@router.get("", response_model=list[LeaseBreakSummary])
+def list_requests(lease_id: Optional[uuid.UUID] = None, session: Session = Depends(get_session)):
+    """All lease-break requests (newest first), optionally for one lease."""
+    from app.services.deletion import lease_break_is_signed
+
+    stmt = (
+        select(LeaseBreakRequest, Lease, Property)
+        .join(Lease, Lease.id == LeaseBreakRequest.lease_id)
+        .join(Property, Property.id == Lease.property_id)
+        .order_by(LeaseBreakRequest.created_at.desc())
+    )
+    if lease_id:
+        stmt = stmt.where(LeaseBreakRequest.lease_id == lease_id)
+    out = []
+    for req, lease, prop in session.exec(stmt).all():
+        option = session.get(LeaseBreakOption, req.selected_option_id) if req.selected_option_id else None
+        tenants = _tenants_for_lease(session, lease.id)
+        out.append(LeaseBreakSummary(
+            id=req.id, created_at=req.created_at, lease_id=lease.id, property_id=prop.id,
+            property_name=prop.name,
+            tenant_names=", ".join(f"{t.first_name} {t.last_name}" for t in tenants) or "No tenants",
+            status=req.status, requested_date=req.requested_date,
+            desired_move_out_date=req.desired_move_out_date,
+            selected_option_label=option.label if option else None,
+            cash_due_at_signing=option.cash_due_at_signing if option else None,
+            has_signed_agreement=lease_break_is_signed(session, req),
+        ))
+    return out
 
 
 @router.get("/{request_id}", response_model=LeaseBreakDetail)

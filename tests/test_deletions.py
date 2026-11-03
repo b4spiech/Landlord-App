@@ -30,8 +30,19 @@ def c(monkeypatch):
         # Remove anything a test left behind so other test files see only seed data.
         with Session(engine) as s:
             leftover = s.exec(select(Property).where(Property.name == "Delete Me Condo")).all()
+            from app.models import EmailApproval, LeaseBreakDocument, LeaseBreakOption, LeaseBreakRequest
             for p in leftover:
                 for lease in s.exec(select(Lease).where(Lease.property_id == p.id)).all():
+                    for req in s.exec(select(LeaseBreakRequest).where(LeaseBreakRequest.lease_id == lease.id)).all():
+                        req.selected_option_id = None
+                        s.add(req)
+                        s.flush()
+                        for model in (EmailApproval, LeaseBreakDocument, LeaseBreakOption):
+                            for row in s.exec(select(model).where(model.lease_break_request_id == req.id)).all():
+                                s.delete(row)
+                        s.flush()
+                        s.delete(req)
+                    s.flush()
                     for model in (LeaseTenant, Payment):
                         for row in s.exec(select(model).where(model.lease_id == lease.id)).all():
                             s.delete(row)
@@ -200,3 +211,67 @@ def test_missing_record_and_public_host(c):
     assert c.delete(f"/api/v1/properties/{pid}", headers=PUBLIC).status_code == 404
     assert _exists(Property, pid)
     c.delete(f"/api/v1/properties/{pid}", headers=ADMIN)
+
+
+def _lease_with_break(signed=False):
+    from app.models import EmailApproval, LeaseBreakDocument, LeaseBreakOption, LeaseBreakRequest
+
+    pid = _property()
+    with Session(engine) as s:
+        lease = Lease(property_id=pid, start_date=date(2026, 1, 1), end_date=date(2026, 12, 31), monthly_rent=1)
+        s.add(lease)
+        s.flush()
+        req = LeaseBreakRequest(lease_id=lease.id, requested_date=date(2026, 6, 1), desired_move_out_date=date(2026, 7, 31))
+        s.add(req)
+        s.flush()
+        opt = LeaseBreakOption(lease_break_request_id=req.id, option_type="buyout", label="3x buyout", line_items=[],
+                               cash_due_at_signing=4500)
+        s.add(opt)
+        s.flush()
+        req.selected_option_id = opt.id
+        s.add_all([req,
+                   LeaseBreakDocument(lease_break_request_id=req.id, document_type="termination_agreement",
+                                      file_name="a.pdf", status="signed" if signed else "generated"),
+                   EmailApproval(lease_break_request_id=req.id, to_emails=[], cc_emails=[], subject="s",
+                                 body_html="b", attachments=[])])
+        s.commit()
+        return pid, lease.id, req.id
+
+
+def test_lease_breaks_list_and_lease_delete_cascades(c):
+    from app.models import LeaseBreakOption, LeaseBreakRequest
+
+    pid, lid, rid = _lease_with_break()
+    rows = c.get("/api/v1/lease-breaks", params={"lease_id": lid}, headers=ADMIN).json()
+    assert len(rows) == 1 and rows[0]["property_name"] == "Delete Me Condo"
+    assert rows[0]["selected_option_label"] == "3x buyout" and rows[0]["cash_due_at_signing"] == 4500
+    assert rows[0]["has_signed_agreement"] is False
+
+    plan = _preview(c, "leases", lid)
+    assert plan["can_delete"] and "1 lease-break request" in " ".join(plan["also_deletes"])
+    assert c.delete(f"/api/v1/leases/{lid}", headers=ADMIN).status_code == 204
+    assert not _exists(LeaseBreakRequest, rid)
+    with Session(engine) as s:
+        assert s.exec(select(LeaseBreakOption).where(LeaseBreakOption.lease_break_request_id == rid)).all() == []
+    assert c.delete(f"/api/v1/properties/{pid}", headers=ADMIN).status_code == 204
+
+
+def test_delete_single_lease_break(c):
+    from app.models import LeaseBreakRequest
+
+    pid, lid, rid = _lease_with_break()
+    plan = _preview(c, "lease-breaks", rid)
+    assert plan["can_delete"] and plan["also_deletes"] == ["1 buyout option", "1 generated agreement", "1 email draft"]
+    assert c.delete(f"/api/v1/lease-breaks/{rid}", headers=ADMIN).status_code == 204
+    assert not _exists(LeaseBreakRequest, rid) and _exists(Lease, lid)
+    c.delete(f"/api/v1/leases/{lid}", headers=ADMIN)
+    c.delete(f"/api/v1/properties/{pid}", headers=ADMIN)
+
+
+def test_signed_lease_break_blocks_deletes(c):
+    pid, lid, rid = _lease_with_break(signed=True)
+    assert c.get("/api/v1/lease-breaks", params={"lease_id": lid}, headers=ADMIN).json()[0]["has_signed_agreement"]
+    assert "signed" in _preview(c, "lease-breaks", rid)["blockers"][0]
+    assert c.delete(f"/api/v1/lease-breaks/{rid}", headers=ADMIN).status_code == 409
+    assert "signed lease-break agreement" in _preview(c, "leases", lid)["blockers"][0]
+    assert c.delete(f"/api/v1/leases/{lid}", headers=ADMIN).status_code == 409

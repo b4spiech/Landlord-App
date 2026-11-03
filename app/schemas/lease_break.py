@@ -97,6 +97,23 @@ class LeaseBreakRequestRead(TimestampedRead):
     completed_at: Optional[datetime] = None
 
 
+class LeaseBreakSummary(BaseModel):
+    """One row in the lease-break list."""
+
+    id: uuid.UUID
+    created_at: datetime
+    lease_id: uuid.UUID
+    property_id: uuid.UUID
+    property_name: str
+    tenant_names: str
+    status: str
+    requested_date: date
+    desired_move_out_date: date
+    selected_option_label: Optional[str] = None
+    cash_due_at_signing: Optional[float] = None
+    has_signed_agreement: bool = False
+
+
 class LeaseBreakDetail(BaseModel):
     request: LeaseBreakRequestRead
     options: list[LeaseBreakOptionRead] = []

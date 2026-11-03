@@ -8,6 +8,7 @@ import { Modal } from '../components/Modal';
 import { LeaseEditForm } from '../components/LeaseEditForm';
 import { TenantForm } from '../components/TenantForm';
 import { DeleteButton } from '../components/ConfirmDelete';
+import { LeaseBreakList } from '../components/LeaseBreakList';
 import { StatusBadge } from '../components/StatusBadge';
 import type { Tenant } from '../types';
 import { formatCurrency, formatDate, leaseStatusVariant, titleCase } from '../lib/format';
@@ -56,8 +57,14 @@ export const LeaseDetail = () => {
     ['No smoking', lease.no_smoking == null ? null : yesNo(lease.no_smoking)],
     ['Quiet hours', lease.quiet_hours],
     ['Utilities included', lease.utilities_included],
-    ['Lawn maintenance', lease.lawn_maintenance_responsibility && titleCase(lease.lawn_maintenance_responsibility)],
-    ['Trash included', lease.trash_service_included == null ? null : yesNo(lease.trash_service_included)],
+    [
+      'Lawn maintenance',
+      lease.lawn_maintenance_responsibility && titleCase(lease.lawn_maintenance_responsibility),
+    ],
+    [
+      'Trash included',
+      lease.trash_service_included == null ? null : yesNo(lease.trash_service_included),
+    ],
     [
       'Early termination',
       lease.early_termination_allowed == null
@@ -78,12 +85,16 @@ export const LeaseDetail = () => {
       </Link>
       <div className="mb-2 mt-1 text-sm text-gray-600">
         Property:{' '}
-        <Link to={`/properties/${property.id}`} className="font-medium text-blue-600 hover:underline">
+        <Link
+          to={`/properties/${property.id}`}
+          className="font-medium text-blue-600 hover:underline"
+        >
           {property.name}
         </Link>{' '}
         <span className="text-gray-400">
           · {property.address_line1}
-          {property.address_line2 ? `, ${property.address_line2}` : ''}, {property.city}, {property.state}
+          {property.address_line2 ? `, ${property.address_line2}` : ''}, {property.city},{' '}
+          {property.state}
         </span>
       </div>
       <PageHeader
@@ -192,6 +203,19 @@ export const LeaseDetail = () => {
                 </div>
               ))}
             </div>
+          </Card>
+
+          <Card>
+            <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="font-semibold text-gray-900">Lease breaks</h2>
+              <Link
+                to={`/lease-breaks?lease=${lease.id}`}
+                className="text-sm text-blue-600 hover:underline"
+              >
+                + Start
+              </Link>
+            </div>
+            <LeaseBreakList leaseId={lease.id} compact />
           </Card>
         </div>
       </div>

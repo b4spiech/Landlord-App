@@ -12,6 +12,7 @@ const LABELS: Record<DeletableKind, string> = {
   'management-companies': 'management company',
   tenants: 'tenant',
   leases: 'lease',
+  'lease-breaks': 'lease break',
 };
 
 const CONFIRM_WORD = 'DELETE';
