@@ -441,3 +441,43 @@ export interface PublicListing {
   /** Image URLs, cover first (falls back to the property photo). */
   photo_urls: string[];
 }
+
+// --- Tour requests ---------------------------------------------------------
+
+export type TourRequestStatus = 'pending' | 'approved' | 'declined' | 'cancelled' | 'completed';
+
+export interface TourRequest {
+  id: string;
+  created_at: string;
+  listing_id: string;
+  property_id: string;
+  property_name: string;
+  property_address: string;
+  status: TourRequestStatus;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  tour_start: string;
+  tour_end: string;
+  time_zone: string;
+  when_display: string;
+  sms_consent: boolean;
+  sms_consent_at?: string | null;
+  sms_consent_text?: string | null;
+  submitted_ip?: string | null;
+  has_id_photo: boolean;
+  id_photo_delete_after: string;
+  decided_at?: string | null;
+  decision_note?: string | null;
+}
+
+export interface NotificationEntry {
+  created_at: string;
+  channel: 'email' | 'sms';
+  audience: 'landlord' | 'visitor';
+  kind: string;
+  recipient: string;
+  status: 'sent' | 'failed' | 'skipped';
+  detail?: string | null;
+}

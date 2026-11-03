@@ -145,3 +145,15 @@ class ListingChannel(str, Enum):
     mls = "mls"
     yard_sign = "yard_sign"
     other = "other"
+
+
+class TourRequestStatus(str, Enum):
+    pending = "pending"  # submitted, awaiting landlord review
+    approved = "approved"
+    declined = "declined"
+    cancelled = "cancelled"
+    completed = "completed"
+
+
+# Requests that hold a time slot (no one else can book it).
+ACTIVE_TOUR_STATUSES = (TourRequestStatus.pending.value, TourRequestStatus.approved.value)

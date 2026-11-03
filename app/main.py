@@ -18,7 +18,9 @@ from app.routers import (
     owners,
     properties,
     public,
+    public_tours,
     tenants,
+    tour_requests,
 )
 from app.security import gatekeeper
 
@@ -69,7 +71,9 @@ app.include_router(tenants.router, prefix="/api/v1")
 app.include_router(leases.router, prefix="/api/v1")
 app.include_router(lease_break.router, prefix="/api/v1")
 app.include_router(listings.router, prefix="/api/v1")
+app.include_router(tour_requests.router, prefix="/api/v1")
 app.include_router(public.router, prefix="/api/v1")
+app.include_router(public_tours.router, prefix="/api/v1")
 
 
 # ---------------------------------------------------------------------------

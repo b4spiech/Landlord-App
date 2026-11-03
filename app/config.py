@@ -54,6 +54,17 @@ class Settings(BaseSettings):
     PUBLIC_HOSTS: str = "apexelementgrp.com,www.apexelementgrp.com,tours.apexelementgrp.com"
     # Base URL used in links sent to prospects (listing pages, tour forms).
     PUBLIC_SITE_URL: str = "https://tours.apexelementgrp.com"
+    # Base URL of the landlord app, for links in landlord notifications.
+    LANDLORD_APP_URL: str = "https://dev-app.apexelementgrp.com"
+
+    # --- Notifications ------------------------------------------------------
+    # Where new tour requests are announced. Email falls back to the first
+    # CF_ACCESS_ALLOWED_EMAILS address when unset.
+    LANDLORD_NOTIFY_EMAIL: str = ""
+    LANDLORD_SMS_NUMBER: str = ""
+    TWILIO_ACCOUNT_SID: str = ""
+    TWILIO_AUTH_TOKEN: str = ""
+    TWILIO_FROM_NUMBER: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -64,6 +75,13 @@ class Settings(BaseSettings):
     @property
     def public_hosts_list(self) -> list[str]:
         return [h.strip().lower() for h in self.PUBLIC_HOSTS.split(",") if h.strip()]
+
+    @property
+    def landlord_notify_email(self) -> str:
+        if self.LANDLORD_NOTIFY_EMAIL.strip():
+            return self.LANDLORD_NOTIFY_EMAIL.strip()
+        allowed = self.access_allowed_emails_list
+        return allowed[0] if allowed else ""
 
     @property
     def access_allowed_emails_list(self) -> list[str]:

@@ -68,6 +68,7 @@ async def send_email(
     subject: str,
     html_body: str,
     attachments: list[tuple[str, bytes, str]] | None = None,
+    text_body: str | None = None,
 ) -> None:
     if not is_configured():
         raise EmailError(
@@ -86,7 +87,7 @@ async def send_email(
     msg["From"] = settings.SMTP_FROM
     msg["To"] = ", ".join(to_emails)
     msg["Subject"] = subject
-    msg.set_content("This message requires an HTML-capable email client.")
+    msg.set_content(text_body or "This message requires an HTML-capable email client.")
     msg.add_alternative(html_body, subtype="html")
     for name, content, mime in attachments or []:
         maintype, _, subtype = mime.partition("/")

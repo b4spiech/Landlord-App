@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
+import { tourRequestAPI } from '../services/api';
+import { useAsync } from '../lib/useAsync';
 
 const primaryLinks = [
   { to: '/', label: 'Dashboard', end: true },
@@ -23,6 +25,12 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
 export const Navigation = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { pathname } = useLocation();
+  // Refresh the "needs review" count whenever the page changes.
+  const { data: pending } = useAsync(
+    () => tourRequestAPI.list({ status_filter: 'pending' }).catch(() => []),
+    [pathname],
+  );
 
   // Close the dropdown on any outside click.
   useEffect(() => {
@@ -46,6 +54,16 @@ export const Navigation = () => {
               {l.label}
             </NavLink>
           ))}
+          <NavLink to="/tour-requests" className={linkClass}>
+            <span className="flex items-center gap-1.5">
+              Tours
+              {pending && pending.length > 0 && (
+                <span className="rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">
+                  {pending.length}
+                </span>
+              )}
+            </span>
+          </NavLink>
 
           <div className="relative" ref={menuRef}>
             <button

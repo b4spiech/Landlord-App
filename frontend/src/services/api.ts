@@ -18,6 +18,9 @@ import type {
   ListingFields,
   ListingPhoto,
   ManagementCompany,
+  NotificationEntry,
+  TourRequest,
+  TourRequestStatus,
   Owner,
   ParseDocumentResult,
   ParsedLeaseData,
@@ -113,6 +116,14 @@ export const listingAPI = {
   reorderPhotos: (id: string, photoIds: string[]) =>
     data<ListingPhoto[]>(api.put(`/listings/${id}/photos/order`, { photo_ids: photoIds })),
   deletePhoto: (id: string, photoId: string) => api.delete(`/listings/${id}/photos/${photoId}`),
+};
+
+export const tourRequestAPI = {
+  list: (params?: { status_filter?: TourRequestStatus; property_id?: string }) =>
+    data<TourRequest[]>(api.get('/tour-requests', { params })),
+  get: (id: string) => data<TourRequest>(api.get(`/tour-requests/${id}`)),
+  notifications: (id: string) => data<NotificationEntry[]>(api.get(`/tour-requests/${id}/notifications`)),
+  idPhotoUrl: (id: string) => `${API_URL}/tour-requests/${id}/id-photo`,
 };
 
 export const tenantAPI = {

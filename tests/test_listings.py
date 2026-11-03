@@ -149,6 +149,7 @@ def test_property_time_zone_validation(client, property_id):
 
 
 def test_property_photo_is_cover_when_listing_has_no_photos(client, property_id):
+    client.delete(f"/api/v1/properties/{property_id}/photo", headers=ADMIN)  # start with no property photo
     lid = _create(client, property_id, publish=True, monthly_rent=1800, available_date="2026-12-01").json()["id"]
     assert client.get(f"/api/v1/public/listings/{lid}", headers=PUBLIC).json()["photo_urls"] == []
 

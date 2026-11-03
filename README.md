@@ -6,7 +6,12 @@ one PostgreSQL database serve two sites:
 | Site | Hostnames | Who | Protection |
 |------|-----------|-----|------------|
 | **Landlord app** | `dev-app.apexelementgrp.com` | Owner/manager | Cloudflare Access login + JWT check in the backend |
-| **Public site** | `apexelementgrp.com`, `www.`, `tours.` | Prospective renters | Public; can reach only `/api/v1/public/*` |
+| - **Tour requests** (*Tours* in the nav, red badge = needs review): list
+  filtered by status, detail page with the visitor's info, tour time in the
+  property's zone *and* Michigan time, the photo ID, and a log of every
+  email/text sent. *Approve/decline arrives in the next phase.*
+
+**Public site** | `apexelementgrp.com`, `www.`, `tours.` | Prospective renters | Public; can reach only `/api/v1/public/*` |
 
 ## Features
 
@@ -32,14 +37,20 @@ one PostgreSQL database serve two sites:
 **Public site**
 - Company homepage with currently listed homes.
 - `/homes/:id` listing page with photo gallery and details.
-- `/tour` request form (home, contact info, date/time 8:00 am–7:30 pm local,
-  photo ID, SMS opt-in). *Submission is wired up in a later phase; it currently
-  shows "online booking opens soon".*
+- `/tour` request form: home, name, email, mobile, date, start time (only open
+  slots, in the home's local time), photo ID, optional SMS consent. Rules
+  (enforced server-side): 30-minute tours starting 8:00 am–7:30 pm local, at
+  least 2 hours ahead, up to 60 days out, one active booking per home per slot.
+  Spam protection: hidden honeypot field + 5 submissions/hour per IP.
+- On submit: the landlord gets an email (and a text if Twilio is set up) with a
+  review link; the visitor gets an email confirmation (and a text only if they
+  opted in). The exact consent wording and time are stored with the request.
 - `/privacy` and `/sms-terms` (used for Twilio toll-free verification).
 
-**Roadmap (tour requests):** access-code inventory per property → tour request
-submission + landlord alerts → approve/decline → access code sent 30 min before
-the tour → post-tour feedback. Notifications by email (Cloudflare Email
+**Roadmap (tour requests):** ✅ submission + landlord alerts → access-code
+inventory per property → approve/decline → access code sent 30 min before the
+tour → post-tour feedback → automatic photo-ID deletion 30 days after the tour
+(the deletion date is already recorded on each request). Notifications by email (Cloudflare Email
 Service) and SMS (Twilio).
 
 ## Stack
@@ -99,7 +110,7 @@ tests/               pytest suite
 `hoa`, `hoa_document`, `tenant`, `lease`, `lease_tenant`, `lease_document`,
 `payment`, `expense`, `lease_template`, `lease_break_request`,
 `lease_break_option`, `lease_break_document`, `email_approval`, `listing`,
-`listing_photo`.
+`listing_photo`, `tour_request`, `tour_id_photo`, `notification_log`.
 
 All tables use UUID primary keys and timezone-aware `created_at`/`updated_at`.
 Instants are stored in UTC; `property.time_zone` (IANA name, e.g.
@@ -120,6 +131,7 @@ Landlord APIs (require Cloudflare Access when enabled; 404 on public hosts):
 | Leases | `/api/v1/leases` | filter `property_id`; nested `lease_tenants` on create; `property_id` must exist and can be changed, never cleared; document import |
 | Lease breaks | `/api/v1/lease-breaks` | workflow; `/webhook/docusign` (HMAC-verified, no Access JWT) |
 | Listings | `/api/v1/listings` | filters `property_id`, `status_filter`, `open_only`; `/publish`, `/unpublish`, `/close`, `/photos` |
+| Tour requests | `/api/v1/tour-requests` | filters `status_filter`, `property_id`; `/{id}/id-photo` (no-store), `/{id}/notifications` |
 
 Public API (anonymous; only live listings and safe fields):
 
@@ -130,6 +142,8 @@ Public API (anonymous; only live listings and safe fields):
 | `GET /api/v1/public/listings/{id}` | One listed home |
 | `GET /api/v1/public/listings/{id}/photos/{photo_id}` | Listing photo |
 | `GET /api/v1/public/listings/{id}/property-photo` | Property photo (cover fallback when the listing has no photos) |
+| `GET /api/v1/public/listings/{id}/availability?day=YYYY-MM-DD` | Open start times for that local day |
+| `POST /api/v1/public/tour-requests` | Submit a tour request (multipart form incl. `id_photo`) |
 
 Public listings include `photo_urls` (cover first), already resolved to
 listing photos or the property-photo fallback.
@@ -148,10 +162,13 @@ See `.env.example`. Key settings:
 | `CF_ACCESS_ALLOWED_EMAILS` | Optional extra allow-list of landlord emails |
 | `PUBLIC_HOSTS` | Hostnames that serve only the public site |
 | `PUBLIC_SITE_URL` | Base URL for links sent to prospects (`https://tours.apexelementgrp.com`) |
+| `LANDLORD_APP_URL` | Base URL for review links in landlord notifications |
+| `LANDLORD_NOTIFY_EMAIL` | Where tour-request emails go (defaults to the first `CF_ACCESS_ALLOWED_EMAILS`) |
 | `SMTP_*` | Email via Cloudflare Email Service (`smtp.mx.cloudflare.net:465`, user `api_token`) |
 | `DOCUSIGN_*` | E-signature; `DOCUSIGN_WEBHOOK_SECRET` must match the Connect HMAC key |
 | `ANTHROPIC_API_KEY` | AI lease document parsing |
-| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`, `LANDLORD_SMS_NUMBER` | SMS (used by the upcoming tour-request phases) |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` | SMS via Twilio (skipped and logged if unset) |
+| `LANDLORD_SMS_NUMBER` | Landlord's phone for tour-request texts |
 
 ## Tests
 
@@ -160,7 +177,8 @@ pytest -q        # needs DATABASE_URL pointing at a disposable Postgres database
 ```
 
 Covers host gatekeeping, Access JWT validation, DocuSign webhook signatures,
-the listing lifecycle and public visibility, and lease ↔ property linking.
+the listing lifecycle and public visibility, lease ↔ property linking, and tour
+booking (slot rules, time zones, double-booking, spam limits, notifications).
 
 ## Migrations
 

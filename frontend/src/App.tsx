@@ -13,6 +13,8 @@ import { HOAsPage } from './pages/HOAsPage';
 import { HOADetail } from './pages/HOADetail';
 import { LeaseBreakPage } from './pages/LeaseBreakPage';
 import { ListingEditor } from './pages/ListingEditor';
+import { TourRequestsPage } from './pages/TourRequestsPage';
+import { TourRequestDetail } from './pages/TourRequestDetail';
 import { ApprovalsPage } from './pages/ApprovalsPage';
 import { NotFound } from './pages/NotFound';
 
@@ -26,6 +28,8 @@ function App() {
           <Route path="/properties" element={<PropertiesPage />} />
           <Route path="/properties/:id" element={<PropertyDetail />} />
           <Route path="/listings/:id" element={<ListingEditor />} />
+          <Route path="/tour-requests" element={<TourRequestsPage />} />
+          <Route path="/tour-requests/:id" element={<TourRequestDetail />} />
           <Route path="/leases" element={<LeasesPage />} />
           <Route path="/leases/import" element={<LeaseImportPage />} />
           <Route path="/leases/:id" element={<LeaseDetail />} />
