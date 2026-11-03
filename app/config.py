@@ -37,6 +37,8 @@ class Settings(BaseSettings):
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
     SMTP_FROM: str = "noreply@apexelementgrp.com"
+    SMTP_FROM_NAME: str = "APEX Element Group"  # display name shown in inboxes
+    SMTP_REPLY_TO: str = ""  # defaults to SMTP_FROM
 
     # --- Landlord-app protection (Cloudflare Access) -----------------------
     # When enabled, every landlord API request must carry a valid Cloudflare

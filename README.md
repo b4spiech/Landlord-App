@@ -186,7 +186,7 @@ See `.env.example`. Key settings:
 | `PUBLIC_SITE_URL` | Base URL for links sent to prospects (`https://tours.apexelementgrp.com`) |
 | `LANDLORD_APP_URL` | Base URL for review links in landlord notifications |
 | `LANDLORD_NOTIFY_EMAIL` | Where tour-request emails go (defaults to the first `CF_ACCESS_ALLOWED_EMAILS`) |
-| `SMTP_*` | Email via Cloudflare Email Service (`smtp.mx.cloudflare.net:465`, user `api_token`) |
+| `SMTP_*` | Email via Cloudflare Email Service (`smtp.mx.cloudflare.net:465`, user `api_token`). Messages carry a display name (`SMTP_FROM_NAME`, default "APEX Element Group"), `Date`, `Message-ID` and `Reply-To` (`SMTP_REPLY_TO`, default `SMTP_FROM`) |
 | `DOCUSIGN_*` | E-signature; `DOCUSIGN_WEBHOOK_SECRET` must match the Connect HMAC key |
 | `ANTHROPIC_API_KEY` | AI lease document parsing |
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` | SMS via Twilio (skipped and logged if unset) |

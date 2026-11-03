@@ -9,6 +9,7 @@ server is configured.
 from __future__ import annotations
 
 from email.message import EmailMessage
+from email.utils import formataddr, formatdate, make_msgid
 
 from app.config import settings
 
@@ -84,9 +85,15 @@ async def send_email(
         raise EmailError("aiosmtplib is not installed.") from exc
 
     msg = EmailMessage()
-    msg["From"] = settings.SMTP_FROM
+    sender_domain = settings.SMTP_FROM.rpartition("@")[2] or None
+    # Standard headers spam filters expect: a display name, Date and Message-ID
+    # (the SMTP library doesn't add the last two on its own).
+    msg["From"] = formataddr((settings.SMTP_FROM_NAME, settings.SMTP_FROM)) if settings.SMTP_FROM_NAME else settings.SMTP_FROM
     msg["To"] = ", ".join(to_emails)
     msg["Subject"] = subject
+    msg["Date"] = formatdate(localtime=False, usegmt=True)
+    msg["Message-ID"] = make_msgid(domain=sender_domain)
+    msg["Reply-To"] = settings.SMTP_REPLY_TO or settings.SMTP_FROM
     msg.set_content(text_body or "This message requires an HTML-capable email client.")
     msg.add_alternative(html_body, subtype="html")
     for name, content, mime in attachments or []:
