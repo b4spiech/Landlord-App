@@ -14,16 +14,18 @@ const STATUSES: { value: LeaseStatus; label: string }[] = [
 ];
 
 interface Props {
+  /** Pre-select the property (e.g. when adding a lease from a property page). */
+  defaultPropertyId?: string;
   onSaved: () => void;
   onCancel: () => void;
 }
 
-export const LeaseForm: React.FC<Props> = ({ onSaved, onCancel }) => {
+export const LeaseForm: React.FC<Props> = ({ defaultPropertyId, onSaved, onCancel }) => {
   const toast = useToast();
   const [properties, setProperties] = useState<Property[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
 
-  const [propertyId, setPropertyId] = useState('');
+  const [propertyId, setPropertyId] = useState(defaultPropertyId ?? '');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [rent, setRent] = useState<number | ''>('');

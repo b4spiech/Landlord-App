@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { leaseAPI, leaseDocumentAPI } from '../services/api';
+import { leaseAPI, leaseDocumentAPI, propertyAPI } from '../services/api';
 import { useAsync } from '../lib/useAsync';
 import type { Lease } from '../types';
 import { Button, Card, ErrorState, PageHeader, Spinner } from '../components/ui';
@@ -26,15 +26,18 @@ export const LeaseDetail = () => {
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
   const { data, loading, error, reload } = useAsync(async () => {
     const lease = await leaseAPI.get(id!);
-    const documents = await leaseDocumentAPI.list(id!);
-    return { lease, documents };
+    const [documents, property] = await Promise.all([
+      leaseDocumentAPI.list(id!),
+      propertyAPI.get(lease.property_id),
+    ]);
+    return { lease, documents, property };
   }, [id]);
 
   if (loading) return <Spinner />;
   if (error) return <ErrorState message={error} onRetry={reload} />;
   if (!data) return null;
 
-  const { lease, documents } = data;
+  const { lease, documents, property } = data;
 
   // Curated terms to display (label, value), skipping empties.
   const terms: [string, string | number | null | undefined][] = [
@@ -71,6 +74,16 @@ export const LeaseDetail = () => {
       <Link to="/leases" className="text-sm text-blue-600 hover:underline">
         &larr; Leases
       </Link>
+      <div className="mb-2 mt-1 text-sm text-gray-600">
+        Property:{' '}
+        <Link to={`/properties/${property.id}`} className="font-medium text-blue-600 hover:underline">
+          {property.name}
+        </Link>{' '}
+        <span className="text-gray-400">
+          · {property.address_line1}
+          {property.address_line2 ? `, ${property.address_line2}` : ''}, {property.city}, {property.state}
+        </span>
+      </div>
       <PageHeader
         title={`${formatCurrency(lease.monthly_rent)}/mo lease`}
         subtitle={`${formatDate(lease.start_date)} → ${formatDate(lease.end_date)}`}

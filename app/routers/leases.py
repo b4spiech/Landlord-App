@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFil
 from sqlmodel import Session, func, select
 
 from app.database import get_session
-from app.models import Lease, LeaseDocument, LeaseTenant, Payment, Tenant
+from app.models import Lease, LeaseDocument, LeaseTenant, Payment, Property, Tenant
 from app.routers.crud import apply_updates, get_or_404
 from app.schemas.lease import (
     LeaseCreate,
@@ -44,6 +44,7 @@ def _build_detail(session: Session, lease: Lease) -> LeaseDetailRead:
 
 @router.post("", response_model=LeaseDetailRead, status_code=status.HTTP_201_CREATED)
 def create_lease(payload: LeaseCreate, session: Session = Depends(get_session)):
+    get_or_404(session, Property, payload.property_id, "Property")
     data = payload.model_dump(exclude={"lease_tenants"})
     lease = Lease(**data)
     session.add(lease)
@@ -86,7 +87,13 @@ def update_lease(
     session: Session = Depends(get_session),
 ):
     lease = get_or_404(session, Lease, lease_id, "Lease")
-    apply_updates(lease, payload.model_dump(exclude_unset=True))
+    data = payload.model_dump(exclude_unset=True)
+    if "property_id" in data:
+        # A lease always belongs to exactly one property; moving it is allowed.
+        if data["property_id"] is None:
+            raise HTTPException(status_code=422, detail="A lease must be linked to a property.")
+        get_or_404(session, Property, data["property_id"], "Property")
+    apply_updates(lease, data)
     session.add(lease)
     session.commit()
     session.refresh(lease)

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { getErrorMessage, leaseAPI } from '../services/api';
+import { getErrorMessage, leaseAPI, propertyAPI } from '../services/api';
+import { useAsync } from '../lib/useAsync';
 import type { Lease, LeaseStatus } from '../types';
 import { Field, NumberInput, Select, Textarea, TextInput } from './FormFields';
 import { Button } from './ui';
@@ -39,6 +40,7 @@ export const LeaseEditForm: React.FC<Props> = ({ lease, onSaved, onCancel }) => 
   const [form, setForm] = useState<Partial<Lease>>({ ...lease });
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const { data: properties } = useAsync(() => propertyAPI.list());
 
   const set = <K extends keyof Lease>(k: K, v: Lease[K] | null) =>
     setForm((p) => ({ ...p, [k]: v }));
@@ -64,6 +66,7 @@ export const LeaseEditForm: React.FC<Props> = ({ lease, onSaved, onCancel }) => 
 
   const handleSubmit = async () => {
     const e: Record<string, string> = {};
+    if (!form.property_id) e.property_id = 'Select a property';
     if (!form.start_date) e.start_date = 'Required';
     if (!form.end_date) e.end_date = 'Required';
     if (form.monthly_rent == null || form.monthly_rent <= 0) e.monthly_rent = 'Enter a rent';
@@ -100,7 +103,14 @@ export const LeaseEditForm: React.FC<Props> = ({ lease, onSaved, onCancel }) => 
               options={STATUSES}
             />
           </Field>
-          <div />
+          <Field label="Property" required error={errors.property_id}>
+            <Select
+              value={form.property_id ?? ''}
+              onChange={(v) => set('property_id', v)}
+              options={(properties ?? []).map((p) => ({ value: p.id, label: p.name }))}
+              placeholder="Select property…"
+            />
+          </Field>
           <Field label="Start date" required error={errors.start_date}>
             <TextInput type="date" value={(form.start_date as string) ?? ''} onChange={(v) => set('start_date', (v || null) as never)} />
           </Field>

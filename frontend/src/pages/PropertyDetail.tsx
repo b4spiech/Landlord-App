@@ -5,6 +5,7 @@ import { useAsync } from '../lib/useAsync';
 import { Button, Card, ErrorState, PageHeader, Spinner } from '../components/ui';
 import { Modal } from '../components/Modal';
 import { PropertyForm } from '../components/PropertyForm';
+import { LeaseForm } from '../components/LeaseForm';
 import { PropertyPhotoCard } from '../components/PropertyPhotoCard';
 import { ListingCard } from '../components/ListingCard';
 import { StatusBadge } from '../components/StatusBadge';
@@ -14,6 +15,7 @@ export const PropertyDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [editOpen, setEditOpen] = useState(false);
+  const [leaseOpen, setLeaseOpen] = useState(false);
   const { data, loading, error, reload } = useAsync(async () => {
     const property = await propertyAPI.get(id!);
     const leaseList = await leaseAPI.list({ property_id: id });
@@ -138,8 +140,11 @@ export const PropertyDetail = () => {
       )}
 
       <Card>
-        <div className="px-5 py-4 border-b border-gray-200">
+        <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
           <h2 className="font-semibold text-gray-900">Leases ({leases.length})</h2>
+          <button onClick={() => setLeaseOpen(true)} className="text-sm font-medium text-blue-600 hover:underline">
+            + New lease
+          </button>
         </div>
         <div className="divide-y divide-gray-100">
           {leases.length === 0 && <p className="px-5 py-6 text-sm text-gray-500">No leases.</p>}
@@ -168,6 +173,17 @@ export const PropertyDetail = () => {
 
         <PropertyPhotoCard propertyId={property.id} />
       </div>
+
+      <Modal open={leaseOpen} title="New Lease" onClose={() => setLeaseOpen(false)}>
+        <LeaseForm
+          defaultPropertyId={property.id}
+          onSaved={() => {
+            setLeaseOpen(false);
+            reload();
+          }}
+          onCancel={() => setLeaseOpen(false)}
+        />
+      </Modal>
 
       <Modal open={editOpen} title="Edit Property" onClose={() => setEditOpen(false)}>
         <PropertyForm

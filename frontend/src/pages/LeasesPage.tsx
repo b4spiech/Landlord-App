@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { leaseAPI } from '../services/api';
+import { leaseAPI, propertyAPI } from '../services/api';
 import { useAsync } from '../lib/useAsync';
 import type { LeaseStatus } from '../types';
 import { Button, Card, EmptyState, ErrorState, PageHeader, Spinner } from '../components/ui';
@@ -21,6 +21,8 @@ const FILTERS: { value: '' | LeaseStatus; label: string }[] = [
 export const LeasesPage = () => {
   const navigate = useNavigate();
   const { data, loading, error, reload } = useAsync(() => leaseAPI.list());
+  const { data: properties } = useAsync(() => propertyAPI.list());
+  const propertyName = (id: string) => properties?.find((p) => p.id === id)?.name ?? '…';
   const [filter, setFilter] = useState<'' | LeaseStatus>('');
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -86,6 +88,7 @@ export const LeasesPage = () => {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-500 text-left">
               <tr>
+                <th className="px-5 py-3 font-medium">Property</th>
                 <th className="px-5 py-3 font-medium">Rent</th>
                 <th className="px-5 py-3 font-medium">Term</th>
                 <th className="px-5 py-3 font-medium">Deposit</th>
@@ -99,6 +102,7 @@ export const LeasesPage = () => {
                   onClick={() => navigate(`/leases/${l.id}`)}
                   className="hover:bg-gray-50 cursor-pointer"
                 >
+                  <td className="px-5 py-3 text-gray-900">{propertyName(l.property_id)}</td>
                   <td className="px-5 py-3 font-medium text-blue-600">
                     {formatCurrency(l.monthly_rent)}/mo
                   </td>
