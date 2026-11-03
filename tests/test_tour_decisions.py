@@ -16,6 +16,7 @@ from app.models import TourFeedback, AccessCode, Listing, ListingPhoto, Notifica
 from app.routers import public_tours
 from app.seed import seed
 from app.services import email_service, sms_service, tour_notifications
+from tests.conftest import sign_in
 
 ADMIN = {"host": "dev-app.example.com"}
 PUBLIC = {"host": "tours.example.com"}
@@ -63,6 +64,7 @@ def env(monkeypatch):
 
 def _request(c, lid, outbox, tour_time="10:00", consent=True):
     day = (datetime.now(AZ).date() + timedelta(days=3)).isoformat()
+    sign_in(c, "pat@example.com")
     r = c.post("/api/v1/public/tour-requests", headers=PUBLIC, files={"id_photo": ("id.png", io.BytesIO(b"img"), "image/png")},
                data={"listing_id": lid, "first_name": "Pat", "last_name": "Renter", "email": "pat@example.com",
                      "phone": "6165550142", "tour_date": day, "tour_time": tour_time,

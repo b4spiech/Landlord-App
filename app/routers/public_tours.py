@@ -6,7 +6,6 @@ it validates everything server-side and is rate limited.
 
 from __future__ import annotations
 
-import re
 import time as _time
 import uuid
 from collections import defaultdict, deque
@@ -21,6 +20,7 @@ from sqlmodel import Session, select
 from app.database import get_session
 from app.models import Listing, Property, TourFeedback, TourIdPhoto, TourRequest
 from app.models.enums import ACTIVE_TOUR_STATUSES, ListingStatus
+from app.routers.public_auth import current_visitor_email
 from app.services.sms_service import normalize_us_phone
 from app.services.timezones import property_time_zone
 from app.services.tour_notifications import notify_landlord_feedback, notify_tour_request_submitted
@@ -45,7 +45,6 @@ SMS_CONSENT_TEXT = (
 
 MAX_ID_BYTES = 10 * 1024 * 1024
 ID_TYPES = {"image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"}
-EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]{2,}$")
 
 # Simple per-IP limit (single Railway instance): 5 submissions per hour.
 RATE_LIMIT, RATE_WINDOW = 5, 3600
@@ -114,7 +113,6 @@ async def submit_tour_request(
     listing_id: uuid.UUID = Form(...),
     first_name: str = Form(..., max_length=100),
     last_name: str = Form(..., max_length=100),
-    email: str = Form(..., max_length=254),
     phone: str = Form(..., max_length=30),
     tour_date: date = Form(...),
     tour_time: str = Form(...),
@@ -122,7 +120,12 @@ async def submit_tour_request(
     website: str = Form(""),  # honeypot: real people never fill this hidden field
     id_photo: UploadFile = File(...),
     session: Session = Depends(get_session),
+    visitor_email: str | None = Depends(current_visitor_email),
 ):
+    # The email comes from the visitor's verified sign-in, never from the form.
+    if not visitor_email:
+        raise HTTPException(status_code=401, detail="Please verify your email address first.")
+    email = visitor_email
     if website.strip():
         # Pretend success so bots don't learn anything.
         return {"ok": True}
@@ -131,11 +134,9 @@ async def submit_tour_request(
     if _rate_limited(ip):
         raise HTTPException(status_code=429, detail="Too many requests. Please try again later or email us.")
 
-    first_name, last_name, email = first_name.strip(), last_name.strip(), email.strip().lower()
+    first_name, last_name = first_name.strip(), last_name.strip()
     if not first_name or not last_name:
         raise HTTPException(status_code=422, detail="Please enter your first and last name.")
-    if not EMAIL_RE.match(email):
-        raise HTTPException(status_code=422, detail="Please enter a valid email address.")
     phone_e164 = normalize_us_phone(phone)
     if not phone_e164:
         raise HTTPException(status_code=422, detail="Please enter a valid US mobile number.")

@@ -19,6 +19,7 @@ from app.routers import public_tours
 from app.seed import seed
 from app.services import email_service, sms_service, tour_notifications
 from app.services.tour_scheduling import check_slot, fmt_for_landlord
+from tests.conftest import sign_in
 
 ADMIN = {"host": "dev-app.example.com"}
 PUBLIC = {"host": "tours.example.com"}
@@ -70,9 +71,12 @@ def _form(listing_id, **over):
     return data
 
 
-def _submit(c, listing_id, file=("id.png", PNG, "image/png"), **over):
+def _submit(c, listing_id, file=("id.png", PNG, "image/png"), signed_in=True, **over):
+    data = _form(listing_id, **over)
+    if signed_in:
+        sign_in(c, data.pop("email"))  # the email comes from the verified sign-in
     files = {"id_photo": (file[0], io.BytesIO(file[1]), file[2])}
-    return c.post("/api/v1/public/tour-requests", data=_form(listing_id, **over), files=files, headers=PUBLIC)
+    return c.post("/api/v1/public/tour-requests", data=data, files=files, headers=PUBLIC)
 
 
 def test_availability_lists_half_hour_slots(env):
@@ -122,7 +126,6 @@ def test_booked_slot_is_unavailable_and_cannot_be_double_booked(env):
     ({"tour_date": (date.today() + timedelta(days=90)).isoformat()}, 422),
     ({"tour_date": "2020-01-01"}, 422),
     ({"phone": "555-0142"}, 422),
-    ({"email": "not-an-email"}, 422),
     ({"first_name": "  "}, 422),
 ])
 def test_validation(env, over, status):
@@ -250,3 +253,19 @@ def test_sms_consent_text_matches_frontend():
     parts = re.findall(r"[`'](.*?)[`']", block, re.S)
     text = "".join(parts).replace("${COMPANY.legalName}", "APEX Element Group LLC")
     assert text == public_tours.SMS_CONSENT_TEXT
+
+
+def test_submit_requires_verified_email(env):
+    c, lid, _, _ = env
+    assert _submit(c, lid, signed_in=False).status_code == 401
+
+
+def test_typed_email_is_ignored_in_favor_of_verified_one(env):
+    c, lid, _, _ = env
+    sign_in(c, "verified@example.com")
+    data = _form(lid)  # includes email=Pat@Example.com
+    r = c.post("/api/v1/public/tour-requests", data=data, headers=PUBLIC,
+               files={"id_photo": ("id.png", io.BytesIO(PNG), "image/png")})
+    assert r.status_code == 201
+    with Session(engine) as s:
+        assert s.exec(select(TourRequest)).one().email == "verified@example.com"

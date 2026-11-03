@@ -13,6 +13,12 @@ async function parse<T>(res: Response): Promise<T> {
 }
 
 const get = <T>(path: string) => fetch(BASE + path).then((r) => parse<T>(r));
+const post = <T>(path: string, body: unknown) =>
+  fetch(BASE + path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  }).then((r) => parse<T>(r));
 
 export interface Slot {
   time: string; // "HH:MM", home's local time
@@ -39,6 +45,15 @@ export const publicApi = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     }).then((r) => parse<{ ok: boolean }>(r)),
+  // Email sign-in (required before requesting a tour). Cookies are same-origin.
+  me: () =>
+    fetch(`${BASE}/auth/me`).then(
+      (r) => (r.ok ? r.json() : null) as Promise<{ email: string } | null>,
+    ),
+  startSignIn: (email: string) => post<{ ok: boolean }>('/auth/start', { email }),
+  verifySignIn: (email: string, code: string) =>
+    post<{ email: string }>('/auth/verify', { email, code }),
+  signOut: () => post<{ ok: boolean }>('/auth/logout', {}),
   submitTourRequest: (form: FormData) =>
     fetch(`${BASE}/tour-requests`, { method: 'POST', body: form }).then((r) =>
       parse<{ ok: boolean; when?: string }>(r),

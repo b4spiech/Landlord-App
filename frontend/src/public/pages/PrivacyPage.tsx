@@ -5,8 +5,9 @@ import { H2, LegalPage, Ul } from './legal';
 export const PrivacyPage = () => (
   <LegalPage title="Privacy Policy">
     <p>
-      {COMPANY.legalName} ("we", "us") operates {COMPANY.site} (including {COMPANY.toursSite}) so prospective renters can request
-      self-guided tours of our rental homes. This policy explains what we collect and how we use it.
+      {COMPANY.legalName} ("we", "us") operates {COMPANY.site} (including {COMPANY.toursSite}) so
+      prospective renters can request self-guided tours of our rental homes. This policy explains
+      what we collect and how we use it.
     </p>
 
     <H2>Information we collect</H2>
@@ -15,11 +16,17 @@ export const PrivacyPage = () => (
       <li>The home you want to tour and your requested date and time.</li>
       <li>A photo of your government-issued ID.</li>
       <li>Feedback you choose to give after your tour.</li>
-      <li>Basic technical data (such as IP address) used to keep the site secure and prevent abuse.</li>
+      <li>
+        Basic technical data (such as IP address) used to keep the site secure and prevent abuse.
+      </li>
     </Ul>
 
     <H2>How we use it</H2>
     <Ul>
+      <li>
+        To verify your email address with a one-time code before you request a tour. You stay signed
+        in on that device for up to 30 days.
+      </li>
       <li>To review and approve or decline your tour request.</li>
       <li>To verify your identity before granting access to a home.</li>
       <li>
@@ -37,9 +44,9 @@ export const PrivacyPage = () => (
 
     <H2>Sharing</H2>
     <p>
-      We do not sell or rent your personal information. We share it only with service providers
-      that help us run this site and send messages (for example, our hosting, email, and text
-      messaging providers), and only as needed to provide the service, or when required by law.
+      We do not sell or rent your personal information. We share it only with service providers that
+      help us run this site and send messages (for example, our hosting, email, and text messaging
+      providers), and only as needed to provide the service, or when required by law.
     </p>
     <p>
       <strong>
@@ -52,17 +59,25 @@ export const PrivacyPage = () => (
 
     <H2>Text messages</H2>
     <p>
-      Text messaging is optional. See our <Link to="/sms-terms" className="text-blue-700 hover:underline">SMS Terms</Link>{' '}
+      Text messaging is optional. See our{' '}
+      <Link to="/sms-terms" className="text-blue-700 hover:underline">
+        SMS Terms
+      </Link>{' '}
       for details. Reply STOP to any message to opt out.
     </p>
 
     <H2>Your choices</H2>
     <p>
       You can ask us to access, correct, or delete your information at any time by emailing{' '}
-      <a href={`mailto:${COMPANY.email}`} className="text-blue-700 hover:underline">{COMPANY.email}</a>.
+      <a href={`mailto:${COMPANY.email}`} className="text-blue-700 hover:underline">
+        {COMPANY.email}
+      </a>
+      .
     </p>
 
     <H2>Changes</H2>
-    <p>We may update this policy and will post the new version on this page with its effective date.</p>
+    <p>
+      We may update this policy and will post the new version on this page with its effective date.
+    </p>
   </LegalPage>
 );

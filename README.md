@@ -58,6 +58,15 @@ one PostgreSQL database serve two sites:
 - Company homepage with currently listed homes. Each home card has **Request a
   tour** (opens the form with that home preselected) and **Details**.
 - `/homes/:id` listing page with photo gallery and details.
+- **Email sign-in before requesting a tour** (homepage and home pages stay
+  open): the visitor enters their email, gets a 6-digit code (expires in 10
+  min, 5 tries, max 3 codes per email per 10 min and 10 per IP per hour), and
+  is then signed in on that device for 30 days via an HttpOnly, SameSite=Lax
+  (Secure over HTTPS) cookie. Only hashes of codes and session tokens are
+  stored. The verified email is shown locked on the form ("Not you?" signs
+  out) and is the address every tour message goes to; the server ignores any
+  typed email. The SMS opt-in wording is also shown on the sign-in step so it's
+  publicly visible for carrier review.
 - `/tour` request form (`?home=<listing id>` preselects a home, shown as a summary
   card; a single listed home is selected automatically): home, name, email, mobile, date, start time (only open
   slots, in the home's local time), photo ID, optional SMS consent. Rules
@@ -147,7 +156,7 @@ tests/               pytest suite
 `payment`, `expense`, `lease_template`, `lease_break_request`,
 `lease_break_option`, `lease_break_document`, `email_approval`, `listing`,
 `listing_photo`, `tour_request`, `tour_id_photo`, `notification_log`,
-`access_code`, `tour_feedback`.
+`access_code`, `tour_feedback`, `email_verification`, `visitor_session`.
 
 All tables use UUID primary keys and timezone-aware `created_at`/`updated_at`.
 Instants are stored in UTC; `property.time_zone` (IANA name, e.g.
@@ -181,7 +190,8 @@ Public API (anonymous; only live listings and safe fields):
 | `GET /api/v1/public/listings/{id}/photos/{photo_id}` | Listing photo |
 | `GET /api/v1/public/listings/{id}/property-photo` | Property photo (cover fallback when the listing has no photos) |
 | `GET /api/v1/public/listings/{id}/availability?day=YYYY-MM-DD` | Open start times for that local day |
-| `POST /api/v1/public/tour-requests` | Submit a tour request (multipart form incl. `id_photo`) |
+| `POST /api/v1/public/auth/start` / `verify` / `logout`, `GET /me` | Visitor email sign-in (code by email → session cookie) |
+| `POST /api/v1/public/tour-requests` | Submit a tour request (multipart form incl. `id_photo`); requires a signed-in visitor, email taken from the session |
 | `GET/POST /api/v1/public/feedback/{token}` | Post-tour feedback form (token from the private link) |
 
 Public listings include `photo_urls` (cover first), already resolved to
@@ -221,7 +231,9 @@ booking (slot rules, time zones, double-booking, spam limits, notifications),
 the door-code lifecycle (reserve/release/issue, expiry, no reuse), and
 approve/decline/cancel/send-code with the exact visitor messages, and the
 scheduler (send timing, retries + landlord alerts, completion + feedback
-requests, photo-ID deletion) plus the feedback form. `tests/conftest.py` turns
+requests, photo-ID deletion), the feedback form, and visitor email sign-in
+(codes, lockout, expiry, rate limits, cookie flags, hashed storage).
+`tests/conftest.py` provides `sign_in(client, email)` for tests that submit tours. `tests/conftest.py` turns
 the background loop off; tests call `run_due_jobs(now)` directly.
 
 ## Migrations

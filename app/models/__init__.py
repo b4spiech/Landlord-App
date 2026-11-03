@@ -21,6 +21,7 @@ from app.models.organization import ManagementCompany, Owner
 from app.models.property import Property, PropertyPhoto
 from app.models.template import LeaseTemplate
 from app.models.tenant import Tenant
+from app.models.visitor_auth import EmailVerification, VisitorSession
 from app.models.tour import NotificationLog, TourFeedback, TourIdPhoto, TourRequest
 
 __all__ = [
@@ -49,4 +50,6 @@ __all__ = [
     "NotificationLog",
     "AccessCode",
     "TourFeedback",
+    "EmailVerification",
+    "VisitorSession",
 ]

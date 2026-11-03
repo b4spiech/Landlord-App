@@ -20,6 +20,7 @@ from app.routers import (
     owners,
     properties,
     public,
+    public_auth,
     public_tours,
     tenants,
     tour_requests,
@@ -84,6 +85,7 @@ app.include_router(tour_requests.router, prefix="/api/v1")
 app.include_router(access_codes.router, prefix="/api/v1")
 app.include_router(public.router, prefix="/api/v1")
 app.include_router(public_tours.router, prefix="/api/v1")
+app.include_router(public_auth.router, prefix="/api/v1")
 
 
 # ---------------------------------------------------------------------------
