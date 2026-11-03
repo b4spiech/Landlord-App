@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ownerAPI } from '../services/api';
 import { useAsync } from '../lib/useAsync';
+import { DeleteButton } from '../components/ConfirmDelete';
 import type { Owner } from '../types';
 import { Button, Card, EmptyState, ErrorState, PageHeader, Spinner } from '../components/ui';
 import { Modal } from '../components/Modal';
@@ -56,9 +57,12 @@ export const OwnersPage = () => {
                     {[o.city, o.state].filter(Boolean).join(', ') || '—'}
                   </td>
                   <td className="px-5 py-3 text-right">
-                    <button onClick={() => openEdit(o)} className="text-blue-600 hover:underline">
-                      Edit
-                    </button>
+                    <span className="inline-flex gap-4">
+                      <button onClick={() => openEdit(o)} className="text-blue-600 hover:underline">
+                        Edit
+                      </button>
+                      <DeleteButton kind="owners" id={o.id} onDeleted={reload} variant="link" />
+                    </span>
                   </td>
                 </tr>
               ))}

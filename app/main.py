@@ -11,6 +11,7 @@ from app.config import settings
 from app.database import create_all_tables
 from app.routers import (
     access_codes,
+    deletions,
     hoas,
     jurisdictions,
     lease_break,
@@ -83,6 +84,7 @@ app.include_router(lease_break.router, prefix="/api/v1")
 app.include_router(listings.router, prefix="/api/v1")
 app.include_router(tour_requests.router, prefix="/api/v1")
 app.include_router(access_codes.router, prefix="/api/v1")
+app.include_router(deletions.router, prefix="/api/v1")
 app.include_router(public.router, prefix="/api/v1")
 app.include_router(public_tours.router, prefix="/api/v1")
 app.include_router(public_auth.router, prefix="/api/v1")

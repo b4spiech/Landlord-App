@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { hoaAPI } from '../services/api';
 import { useAsync } from '../lib/useAsync';
 import { Button, Card, ErrorState, PageHeader, Spinner } from '../components/ui';
@@ -7,8 +7,10 @@ import { Modal } from '../components/Modal';
 import { HOAForm } from '../components/HOAForm';
 import { HOADocuments } from '../components/HOADocuments';
 import { formatCurrency } from '../lib/format';
+import { DeleteButton } from '../components/ConfirmDelete';
 
 export const HOADetail = () => {
+  const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { data: hoa, loading, error, reload } = useAsync(() => hoaAPI.get(id!), [id]);
   const [editOpen, setEditOpen] = useState(false);
@@ -37,9 +39,12 @@ export const HOADetail = () => {
       <PageHeader
         title={hoa.name}
         action={
-          <Button variant="secondary" onClick={() => setEditOpen(true)}>
-            Edit
-          </Button>
+          <div className="flex gap-3">
+            <Button variant="secondary" onClick={() => setEditOpen(true)}>
+              Edit
+            </Button>
+            <DeleteButton kind="hoas" id={hoa.id} onDeleted={() => navigate('/hoas')} />
+          </div>
         }
       />
 

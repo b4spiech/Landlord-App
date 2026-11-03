@@ -129,6 +129,22 @@ export const accessCodeAPI = {
   remove: (codeId: string) => api.delete(`/access-codes/${codeId}`),
 };
 
+export type DeletableKind = 'properties' | 'hoas' | 'owners' | 'management-companies' | 'tenants' | 'leases';
+
+export interface DeletePreview {
+  kind: string;
+  name: string;
+  can_delete: boolean;
+  blockers: string[];
+  also_deletes: string[];
+  unlinks: string[];
+}
+
+export const deleteAPI = {
+  preview: (kind: DeletableKind, id: string) => data<DeletePreview>(api.get(`/${kind}/${id}/delete-preview`)),
+  remove: (kind: DeletableKind, id: string) => api.delete(`/${kind}/${id}`),
+};
+
 export const tourRequestAPI = {
   list: (params?: { status_filter?: TourRequestStatus; property_id?: string }) =>
     data<TourRequest[]>(api.get('/tour-requests', { params })),

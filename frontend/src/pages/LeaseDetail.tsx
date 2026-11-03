@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { leaseAPI, leaseDocumentAPI, propertyAPI } from '../services/api';
 import { useAsync } from '../lib/useAsync';
 import type { Lease } from '../types';
@@ -7,6 +7,7 @@ import { Button, Card, ErrorState, PageHeader, Spinner } from '../components/ui'
 import { Modal } from '../components/Modal';
 import { LeaseEditForm } from '../components/LeaseEditForm';
 import { TenantForm } from '../components/TenantForm';
+import { DeleteButton } from '../components/ConfirmDelete';
 import { StatusBadge } from '../components/StatusBadge';
 import type { Tenant } from '../types';
 import { formatCurrency, formatDate, leaseStatusVariant, titleCase } from '../lib/format';
@@ -21,6 +22,7 @@ function humanSize(bytes?: number | null): string {
 const yesNo = (v?: boolean | null) => (v == null ? '—' : v ? 'Yes' : 'No');
 
 export const LeaseDetail = () => {
+  const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [editOpen, setEditOpen] = useState(false);
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
@@ -96,6 +98,7 @@ export const LeaseDetail = () => {
             <Button variant="secondary" onClick={() => setEditOpen(true)}>
               Edit
             </Button>
+            <DeleteButton kind="leases" id={lease.id} onDeleted={() => navigate('/leases')} />
           </div>
         }
       />

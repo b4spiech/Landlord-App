@@ -54,6 +54,22 @@ one PostgreSQL database serve two sites:
   (rented / withdrawn). One open listing per property. If a listing has no
   photos of its own, the public site uses the property's photo as the cover.
 
+- **Deleting records** (properties, HOAs, owners, management companies,
+  tenants, leases): a **Delete** button opens a warning that asks the server
+  what would happen and lists it, and the delete button only unlocks after
+  typing `DELETE`. Rules — financial/legal history is never removed silently:
+
+  | Deleting a… | Blocked while it has… | Also deletes | Unlinks |
+  |---|---|---|---|
+  | Property | leases, expenses | its photo, listings + photos, door codes, tour requests (+ photo IDs, feedback, message log) | — |
+  | HOA | — | its documents | properties (HOA becomes none) |
+  | Owner | properties | — | — |
+  | Management company | — | — | properties |
+  | Tenant | any lease | — | — |
+  | Lease | payments, lease-break requests | uploaded lease documents | its tenants (tenant records kept) |
+- A property's HOA is changed in *Edit* (or the **Change/Set** link next to the
+  HOA on the property page); choose *None* to remove it.
+
 **Public site**
 - Company homepage with currently listed homes. Each home card has **Request a
   tour** (opens the form with that home preselected) and **Details**.
@@ -178,6 +194,7 @@ Landlord APIs (require Cloudflare Access when enabled; 404 on public hosts):
 | Lease breaks | `/api/v1/lease-breaks` | workflow; `/webhook/docusign` (HMAC-verified, no Access JWT) |
 | Listings | `/api/v1/listings` | filters `property_id`, `status_filter`, `open_only`; `/publish`, `/unpublish`, `/close`, `/photos` |
 | Door codes | `/api/v1/properties/{id}/access-codes` | `GET` (counts + active codes; `?history=true` adds sent), `POST` bulk add; `DELETE /api/v1/access-codes/{id}` (available only) |
+| Deletes | `/api/v1/{kind}/{id}/delete-preview` (GET), `/api/v1/{kind}/{id}` (DELETE) for `properties`, `hoas`, `owners`, `management-companies`, `tenants`, `leases` | preview lists blockers / also-deletes / unlinks; DELETE returns 409 if blocked |
 | Tour requests | `/api/v1/tour-requests` | filters `status_filter`, `property_id`; `/{id}/id-photo` (no-store), `/{id}/notifications`; `POST /{id}/approve`, `/decline`, `/cancel` (body `{note}`), `/send-code` |
 
 Public API (anonymous; only live listings and safe fields):
@@ -232,7 +249,8 @@ the door-code lifecycle (reserve/release/issue, expiry, no reuse), and
 approve/decline/cancel/send-code with the exact visitor messages, and the
 scheduler (send timing, retries + landlord alerts, completion + feedback
 requests, photo-ID deletion), the feedback form, and visitor email sign-in
-(codes, lockout, expiry, rate limits, cookie flags, hashed storage).
+(codes, lockout, expiry, rate limits, cookie flags, hashed storage), and
+record deletion (previews, blockers, cascades, unlinking).
 `tests/conftest.py` provides `sign_in(client, email)` for tests that submit tours. `tests/conftest.py` turns
 the background loop off; tests call `run_due_jobs(now)` directly.
 
