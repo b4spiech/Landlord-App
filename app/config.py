@@ -38,13 +38,34 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = ""
     SMTP_FROM: str = "noreply@apexelementgrp.com"
 
+    # --- Landlord-app protection (Cloudflare Access) -----------------------
+    # When enabled, every landlord API request must carry a valid Cloudflare
+    # Access JWT (Cf-Access-Jwt-Assertion header / CF_Authorization cookie).
+    # This closes the "hit the Railway URL directly" bypass.
     CLOUDFLARE_ACCESS_ENABLED: bool = False
+    CF_ACCESS_TEAM_DOMAIN: str = ""  # e.g. noisy-bread-d22c.cloudflareaccess.com
+    CF_ACCESS_AUD: str = ""  # Application Audience (AUD) tag of the landlord Access app
+    # Optional extra allow-list (comma separated). Empty = trust the Access policy.
+    CF_ACCESS_ALLOWED_EMAILS: str = ""
+
+    # --- Customer-facing site ---------------------------------------------
+    # Hostnames that serve ONLY the public tour site + /api/v1/public/*.
+    # Landlord APIs and API docs return 404 on these hosts.
+    PUBLIC_HOSTS: str = "tours.apexelementgrp.com"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     @property
     def allowed_origins_list(self) -> list[str]:
         return [o.strip() for o in self.ALLOWED_ORIGINS.split(",") if o.strip()]
+
+    @property
+    def public_hosts_list(self) -> list[str]:
+        return [h.strip().lower() for h in self.PUBLIC_HOSTS.split(",") if h.strip()]
+
+    @property
+    def access_allowed_emails_list(self) -> list[str]:
+        return [e.strip().lower() for e in self.CF_ACCESS_ALLOWED_EMAILS.split(",") if e.strip()]
 
 
 settings = Settings()

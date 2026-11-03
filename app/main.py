@@ -16,8 +16,10 @@ from app.routers import (
     management_companies,
     owners,
     properties,
+    public,
     tenants,
 )
+from app.security import gatekeeper
 
 
 @asynccontextmanager
@@ -33,6 +35,10 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+# Host-based gatekeeping (public site vs. landlord app). Registered before
+# CORS so CORS stays the outermost layer.
+app.middleware("http")(gatekeeper)
 
 app.add_middleware(
     CORSMiddleware,
@@ -61,6 +67,7 @@ app.include_router(properties.router, prefix="/api/v1")
 app.include_router(tenants.router, prefix="/api/v1")
 app.include_router(leases.router, prefix="/api/v1")
 app.include_router(lease_break.router, prefix="/api/v1")
+app.include_router(public.router, prefix="/api/v1")
 
 
 # ---------------------------------------------------------------------------

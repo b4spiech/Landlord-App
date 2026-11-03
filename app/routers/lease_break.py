@@ -1,9 +1,16 @@
+import base64
+import hashlib
+import hmac
+import json
+import logging
 import uuid
 from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi.responses import JSONResponse
 from sqlmodel import Session, select
 
+from app.config import settings
 from app.database import get_session
 from app.models import (
     EmailApproval,
@@ -40,6 +47,21 @@ from app.services.lease_break_calculator import LeaseBreakCalculator
 from app.services.lease_break_documents import build_buyout_agreement_pdf
 
 router = APIRouter(prefix="/lease-breaks", tags=["lease-breaks"])
+log = logging.getLogger(__name__)
+
+
+def _docusign_signature_valid(raw_body: bytes, headers) -> bool:
+    """Check DocuSign Connect HMAC (X-DocuSign-Signature-1..N = base64 HMAC-SHA256).
+
+    Fails closed: with no DOCUSIGN_WEBHOOK_SECRET configured, nothing is accepted.
+    """
+    secret = settings.DOCUSIGN_WEBHOOK_SECRET.strip()
+    if not secret:
+        log.warning("DocuSign webhook rejected: DOCUSIGN_WEBHOOK_SECRET is not set")
+        return False
+    expected = base64.b64encode(hmac.new(secret.encode(), raw_body, hashlib.sha256).digest()).decode()
+    provided = [v for k, v in headers.items() if k.lower().startswith("x-docusign-signature-")]
+    return any(hmac.compare_digest(expected, p.strip()) for p in provided)
 
 
 def _tenants_for_lease(session: Session, lease_id: uuid.UUID) -> list[Tenant]:
@@ -471,9 +493,14 @@ async def docusign_webhook(request: Request, session: Session = Depends(get_sess
     """Receive DocuSign Connect status updates and reflect them on the request.
 
     Tolerant of payload shape; never raises so DocuSign won't disable the hook.
+    Requests must carry a valid DocuSign Connect HMAC signature, because this
+    endpoint is reachable without a Cloudflare Access login.
     """
+    raw = await request.body()
+    if not _docusign_signature_valid(raw, request.headers):
+        return JSONResponse({"detail": "Invalid signature."}, status_code=401)
     try:
-        payload = await request.json()
+        payload = json.loads(raw)
     except Exception:
         return {"ok": True}
 
