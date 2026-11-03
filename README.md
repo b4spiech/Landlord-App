@@ -6,7 +6,14 @@ one PostgreSQL database serve two sites:
 | Site | Hostnames | Who | Protection |
 |------|-----------|-----|------------|
 | **Landlord app** | `dev-app.apexelementgrp.com` | Owner/manager | Cloudflare Access login + JWT check in the backend |
-| - **Tour requests** (*Tours* in the nav, red badge = needs review): list
+| - **Door codes** (property page → *Door codes*): paste one-time codes from the
+  lock's app (one per line or comma-separated; 3–20 digits/letters/`*`/`#`),
+  with an optional expiry date and note. Codes go **Available → Held** (reserved
+  for an approved tour) **→ Sent** (issued; never reused). Sent codes leave the
+  list but stay in a history with who received them and when. Low-stock warning
+  under 3 available. Only available codes can be removed. Reservation picks the
+  code expiring soonest that is still valid on the tour date.
+- **Tour requests** (*Tours* in the nav, red badge = needs review): list
   filtered by status, detail page with the visitor's info, tour time in the
   property's zone *and* Michigan time, the photo ID, and a log of every
   email/text sent. *Approve/decline arrives in the next phase.*
@@ -49,7 +56,7 @@ one PostgreSQL database serve two sites:
   opted in). The exact consent wording and time are stored with the request.
 - `/privacy` and `/sms-terms` (used for Twilio toll-free verification).
 
-**Roadmap (tour requests):** ✅ submission + landlord alerts → access-code
+**Roadmap (tour requests):** ✅ submission + landlord alerts → ✅ door-code
 inventory per property → approve/decline → access code sent 30 min before the
 tour → post-tour feedback → automatic photo-ID deletion 30 days after the tour
 (the deletion date is already recorded on each request). Notifications by email (Cloudflare Email
@@ -112,7 +119,8 @@ tests/               pytest suite
 `hoa`, `hoa_document`, `tenant`, `lease`, `lease_tenant`, `lease_document`,
 `payment`, `expense`, `lease_template`, `lease_break_request`,
 `lease_break_option`, `lease_break_document`, `email_approval`, `listing`,
-`listing_photo`, `tour_request`, `tour_id_photo`, `notification_log`.
+`listing_photo`, `tour_request`, `tour_id_photo`, `notification_log`,
+`access_code`.
 
 All tables use UUID primary keys and timezone-aware `created_at`/`updated_at`.
 Instants are stored in UTC; `property.time_zone` (IANA name, e.g.
@@ -133,6 +141,7 @@ Landlord APIs (require Cloudflare Access when enabled; 404 on public hosts):
 | Leases | `/api/v1/leases` | filter `property_id`; nested `lease_tenants` on create; `property_id` must exist and can be changed, never cleared; document import |
 | Lease breaks | `/api/v1/lease-breaks` | workflow; `/webhook/docusign` (HMAC-verified, no Access JWT) |
 | Listings | `/api/v1/listings` | filters `property_id`, `status_filter`, `open_only`; `/publish`, `/unpublish`, `/close`, `/photos` |
+| Door codes | `/api/v1/properties/{id}/access-codes` | `GET` (counts + active codes; `?history=true` adds sent), `POST` bulk add; `DELETE /api/v1/access-codes/{id}` (available only) |
 | Tour requests | `/api/v1/tour-requests` | filters `status_filter`, `property_id`; `/{id}/id-photo` (no-store), `/{id}/notifications` |
 
 Public API (anonymous; only live listings and safe fields):
@@ -180,7 +189,8 @@ pytest -q        # needs DATABASE_URL pointing at a disposable Postgres database
 
 Covers host gatekeeping, Access JWT validation, DocuSign webhook signatures,
 the listing lifecycle and public visibility, lease ↔ property linking, and tour
-booking (slot rules, time zones, double-booking, spam limits, notifications).
+booking (slot rules, time zones, double-booking, spam limits, notifications),
+and the door-code lifecycle (reserve/release/issue, expiry, no reuse).
 
 ## Migrations
 

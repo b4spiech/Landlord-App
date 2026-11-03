@@ -14,7 +14,7 @@ from sqlmodel import Session, delete, select
 from app.config import settings
 from app.database import engine
 from app.main import app
-from app.models import Listing, ListingPhoto, NotificationLog, Property, TourIdPhoto, TourRequest
+from app.models import AccessCode, Listing, ListingPhoto, NotificationLog, Property, TourIdPhoto, TourRequest
 from app.routers import public_tours
 from app.seed import seed
 from app.services import email_service, sms_service, tour_notifications
@@ -28,7 +28,7 @@ PNG = b"\x89PNG\r\n\x1a\n" + b"0" * 64
 
 def _clear():
     with Session(engine) as s:
-        for model in (NotificationLog, TourIdPhoto, TourRequest, ListingPhoto, Listing):
+        for model in (AccessCode, NotificationLog, TourIdPhoto, TourRequest, ListingPhoto, Listing):
             s.exec(delete(model))
         s.commit()
 

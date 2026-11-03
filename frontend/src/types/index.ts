@@ -481,3 +481,29 @@ export interface NotificationEntry {
   status: 'sent' | 'failed' | 'skipped';
   detail?: string | null;
 }
+
+// --- Door codes ------------------------------------------------------------
+
+export type AccessCodeStatus = 'available' | 'reserved' | 'issued';
+
+export interface AccessCode {
+  id: string;
+  created_at: string;
+  code: string;
+  status: AccessCodeStatus;
+  note?: string | null;
+  expires_on?: string | null;
+  tour_request_id?: string | null;
+  tour_visitor?: string | null;
+  reserved_at?: string | null;
+  issued_at?: string | null;
+}
+
+export interface AccessCodeList {
+  available: number;
+  reserved: number;
+  issued: number;
+  low_stock: boolean;
+  low_stock_threshold: number;
+  codes: AccessCode[];
+}

@@ -4,6 +4,7 @@ Importing this package registers every table on ``SQLModel.metadata`` so that
 ``create_all`` and Alembic autogenerate can see them.
 """
 
+from app.models.access_code import AccessCode
 from app.models.email_approval import EmailApproval
 from app.models.finance import Expense, Payment
 from app.models.hoa import HOA, HOADocument
@@ -46,4 +47,5 @@ __all__ = [
     "TourRequest",
     "TourIdPhoto",
     "NotificationLog",
+    "AccessCode",
 ]

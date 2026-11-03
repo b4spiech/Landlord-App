@@ -157,3 +157,9 @@ class TourRequestStatus(str, Enum):
 
 # Requests that hold a time slot (no one else can book it).
 ACTIVE_TOUR_STATUSES = (TourRequestStatus.pending.value, TourRequestStatus.approved.value)
+
+
+class AccessCodeStatus(str, Enum):
+    available = "available"  # loaded, unused
+    reserved = "reserved"  # held for an approved tour, not yet sent
+    issued = "issued"  # sent to a visitor (one-time: never reused)

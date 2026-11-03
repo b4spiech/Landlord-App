@@ -8,6 +8,7 @@ import { PropertyForm } from '../components/PropertyForm';
 import { LeaseForm } from '../components/LeaseForm';
 import { PropertyPhotoCard } from '../components/PropertyPhotoCard';
 import { ListingCard } from '../components/ListingCard';
+import { AccessCodesCard } from '../components/AccessCodesCard';
 import { StatusBadge } from '../components/StatusBadge';
 import {
   formatCurrency,
@@ -190,7 +191,10 @@ export const PropertyDetail = () => {
       </Card>
        </div>
 
-        <PropertyPhotoCard propertyId={property.id} />
+        <div className="space-y-6">
+          <PropertyPhotoCard propertyId={property.id} />
+          <AccessCodesCard propertyId={property.id} />
+        </div>
       </div>
 
       <Modal open={leaseOpen} title="New Lease" onClose={() => setLeaseOpen(false)}>
