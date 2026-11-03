@@ -252,6 +252,21 @@ and the lease-break document templates.
 
 ## Deployment
 
-Railway runs the `Procfile` (`alembic upgrade head`, seed, then uvicorn). DNS,
-TLS, Access and email sending are on Cloudflare (`apexelementgrp.com` zone).
-Pushing `dev` deploys.
+Two Railway environments, each with its own Postgres database. Each deploy runs
+the `Procfile` (`alembic upgrade head`, seed, then uvicorn).
+
+| Environment | Branch | Public site | Landlord app |
+|-------------|--------|-------------|--------------|
+| **Production** | `main` | `apexelementgrp.com`, `www.`, `tours.` | `app.apexelementgrp.com` |
+| **Staging** | `dev` | `dev-tours.apexelementgrp.com` (behind Cloudflare Access) | `dev-app.apexelementgrp.com` |
+
+Workflow: push to `dev` → test on staging → open a PR `dev` → `main` to release.
+
+One Cloudflare Access application protects `app.`, `dev-app.` and `dev-tours.`
+(same AUD tag, so `CF_ACCESS_AUD` is identical in both environments). DNS, TLS,
+Access and email sending are on Cloudflare (`apexelementgrp.com` zone).
+
+Per-environment variables (everything else is shared): `DATABASE_URL`,
+`PUBLIC_HOSTS`, `PUBLIC_SITE_URL`, `LANDLORD_APP_URL`, `ALLOWED_ORIGINS`, and
+`DOCUSIGN_*` (demo vs production). The code defaults to the production
+hostnames, so staging must set these explicitly.
