@@ -6,7 +6,7 @@ export const SmsTermsPage = () => (
   <LegalPage title="SMS Terms">
     <H2>Program</H2>
     <p>
-      {COMPANY.legalName} Tour Notifications. When you request a tour at {COMPANY.site} and check
+      {COMPANY.legalName} Tour Notifications. When you request a tour at {COMPANY.toursSite} and check
       the text-message consent box, we send texts about that tour only.
     </p>
 

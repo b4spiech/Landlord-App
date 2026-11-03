@@ -51,7 +51,7 @@ class Settings(BaseSettings):
     # --- Customer-facing site ---------------------------------------------
     # Hostnames that serve ONLY the public tour site + /api/v1/public/*.
     # Landlord APIs and API docs return 404 on these hosts.
-    PUBLIC_HOSTS: str = "tours.apexelementgrp.com"
+    PUBLIC_HOSTS: str = "apexelementgrp.com,www.apexelementgrp.com,tours.apexelementgrp.com"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

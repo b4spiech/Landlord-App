@@ -2,7 +2,8 @@ export const COMPANY = {
   legalName: 'APEX Element Group LLC',
   shortName: 'APEX Element Group',
   email: 'tours@apexelementgrp.com',
-  site: 'tours.apexelementgrp.com',
+  site: 'apexelementgrp.com',
+  toursSite: 'tours.apexelementgrp.com',
   policyEffectiveDate: 'November 3, 2026',
 };
 

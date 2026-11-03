@@ -5,7 +5,7 @@ import { H2, LegalPage, Ul } from './legal';
 export const PrivacyPage = () => (
   <LegalPage title="Privacy Policy">
     <p>
-      {COMPANY.legalName} ("we", "us") operates {COMPANY.site} so prospective renters can request
+      {COMPANY.legalName} ("we", "us") operates {COMPANY.site} (including {COMPANY.toursSite}) so prospective renters can request
       self-guided tours of our rental homes. This policy explains what we collect and how we use it.
     </p>
 
