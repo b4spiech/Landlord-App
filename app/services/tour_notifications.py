@@ -6,6 +6,7 @@ from __future__ import annotations
 import html
 import logging
 import uuid
+from datetime import datetime, timedelta, timezone
 
 from sqlmodel import Session
 
@@ -14,7 +15,7 @@ from app.database import engine
 from app.models import NotificationLog, Property, TourRequest
 from app.services import email_service, sms_service
 from app.services.sms_service import format_us_phone
-from app.services.tour_scheduling import fmt_for_landlord, fmt_local
+from app.services.tour_scheduling import fmt_for_landlord, fmt_local, fmt_time
 
 log = logging.getLogger(__name__)
 COMPANY = "APEX Element Group"
@@ -31,6 +32,7 @@ def _record(session: Session, req_id, channel, audience, kind, recipient, status
         recipient=recipient or "-", status=status, detail=(detail or "")[:2000] or None,
     ))
     session.commit()
+    return status
 
 
 async def _email(session, req_id, audience, kind, to, subject, html_body, text_body):
@@ -40,10 +42,10 @@ async def _email(session, req_id, audience, kind, to, subject, html_body, text_b
         return _record(session, req_id, "email", audience, kind, to, "skipped", "email not configured")
     try:
         await email_service.send_email([to], subject, html_body, text_body=text_body)
-        _record(session, req_id, "email", audience, kind, to, "sent")
+        return _record(session, req_id, "email", audience, kind, to, "sent")
     except Exception as exc:  # noqa: BLE001 - log any provider failure
         log.exception("Email %s to %s failed", kind, to)
-        _record(session, req_id, "email", audience, kind, to, "failed", str(exc))
+        return _record(session, req_id, "email", audience, kind, to, "failed", str(exc))
 
 
 async def _sms(session, req_id, audience, kind, to, body):
@@ -53,10 +55,10 @@ async def _sms(session, req_id, audience, kind, to, body):
         return _record(session, req_id, "sms", audience, kind, to, "skipped", "SMS not configured")
     try:
         sid = await sms_service.send_sms(to, body)
-        _record(session, req_id, "sms", audience, kind, to, "sent", sid)
+        return _record(session, req_id, "sms", audience, kind, to, "sent", sid)
     except Exception as exc:  # noqa: BLE001
         log.exception("SMS %s to %s failed", kind, to)
-        _record(session, req_id, "sms", audience, kind, to, "failed", str(exc))
+        return _record(session, req_id, "sms", audience, kind, to, "failed", str(exc))
 
 
 def _wrap(body_html: str) -> str:
@@ -118,3 +120,147 @@ async def notify_tour_request_submitted(request_id: uuid.UUID) -> None:
             await _sms(session, req.id, "visitor", "tour_request_received", req.phone,
                        f"{COMPANY}: We received your tour request for {where} on {when_visitor}. "
                        f"We'll let you know once it's reviewed. Reply STOP to opt out.")
+
+
+# --- Decisions and the door code ---------------------------------------------
+
+STOP = " Reply STOP to opt out."
+VISIT_RULES = [
+    "Please take off your shoes when you go inside.",
+    "Turn off all the lights before you leave.",
+    "Make sure the door is locked behind you when you go.",
+]
+
+
+async def _to_visitor(session: Session, req: TourRequest, kind: str, subject: str,
+                      paragraphs: list[str], sms: str, bullets: list[str] | None = None,
+                      highlight: str | None = None) -> bool:
+    """Email the visitor (always) and text them (only with consent).
+
+    Layout: greeting, first paragraph, optional highlighted code, optional
+    bullet list, remaining paragraphs. Returns True if any channel succeeded.
+    """
+    e = html.escape
+    first, rest = paragraphs[0], paragraphs[1:]
+    text_parts = [f"Hi {req.first_name},", first]
+    html_parts = [f"<p>Hi {e(req.first_name)},</p>", f"<p>{e(first)}</p>"]
+    if highlight:
+        text_parts.append(f"    {highlight}")
+        html_parts.append(
+            "<p style='font-size:28px;font-weight:700;letter-spacing:4px;font-family:monospace;"
+            f"background:#f1f5f9;padding:12px 16px;border-radius:8px;display:inline-block'>{e(highlight)}</p>"
+        )
+    if rest and bullets:
+        # The paragraph that introduces the bullets comes right before them.
+        text_parts.append(rest[0])
+        html_parts.append(f"<p>{e(rest[0])}</p>")
+        rest = rest[1:]
+    if bullets:
+        text_parts.append("\n".join(f"- {b}" for b in bullets))
+        html_parts.append("<ul>" + "".join(f"<li>{e(b)}</li>" for b in bullets) + "</ul>")
+    text_parts += rest + [f"— {COMPANY}"]
+    html_parts += [f"<p>{e(p)}</p>" for p in rest] + [f"<p>— {COMPANY}</p>"]
+
+    statuses = [await _email(session, req.id, "visitor", kind, req.email, subject,
+                             _wrap("".join(html_parts)), "\n\n".join(text_parts) + "\n")]
+    if req.sms_consent:
+        statuses.append(await _sms(session, req.id, "visitor", kind, req.phone, f"{COMPANY}: {sms}{STOP}"))
+    return "sent" in statuses
+
+
+def _note(req: TourRequest) -> list[str]:
+    return [f"Note from us: {req.decision_note}"] if req.decision_note else []
+
+
+async def notify_tour_approved(request_id: uuid.UUID) -> None:
+    with Session(engine) as session:
+        req = session.get(TourRequest, request_id)
+        where = _address(session.get(Property, req.property_id))
+        when = fmt_local(req.tour_start, req.time_zone)
+        code_at = fmt_time(req.tour_start - timedelta(minutes=30), req.time_zone)
+        await _to_visitor(
+            session, req, "tour_approved", "Your tour is approved",
+            [
+                f"Good news! Your tour of {where} on {when} is approved.",
+                f"Your one-time access code will be sent 30 minutes before your tour (around {code_at}). "
+                "The code works only once, so please arrive on time.",
+                *_note(req),
+            ],
+            f"Your tour of {where} on {when} is approved! Your one-time access code will be sent 30 "
+            f"minutes before your tour. It works only once, so please be on time.",
+        )
+
+
+async def notify_tour_declined(request_id: uuid.UUID) -> None:
+    with Session(engine) as session:
+        req = session.get(TourRequest, request_id)
+        where = _address(session.get(Property, req.property_id))
+        when = fmt_local(req.tour_start, req.time_zone)
+        await _to_visitor(
+            session, req, "tour_declined", "About your tour request",
+            [
+                f"Thanks for your interest in {where}. Unfortunately, we can't approve your tour "
+                f"request for {when}.",
+                *_note(req),
+                "Thank you for understanding.",
+            ],
+            f"Thanks for your interest in {where}. Unfortunately, we can't approve your tour request "
+            f"for {when}.",
+        )
+
+
+async def notify_tour_cancelled(request_id: uuid.UUID) -> None:
+    with Session(engine) as session:
+        req = session.get(TourRequest, request_id)
+        where = _address(session.get(Property, req.property_id))
+        when = fmt_local(req.tour_start, req.time_zone)
+        await _to_visitor(
+            session, req, "tour_cancelled", "Your tour has been cancelled",
+            [
+                f"Your tour of {where} on {when} has been cancelled."
+                + (" Please don't use the access code we sent." if req.code_sent_at
+                   else " No access code will be sent."),
+                *_note(req),
+                "Sorry for the inconvenience.",
+            ],
+            f"Your tour of {where} on {when} has been cancelled.",
+        )
+
+
+class NoCodeAvailable(Exception):
+    pass
+
+
+async def send_access_code(request_id: uuid.UUID) -> str:
+    """Issue this tour's door code (idempotent) and send it with the visit instructions.
+
+    Returns the code. Raises NoCodeAvailable if the property has no usable code.
+    Used by the landlord's 'Send code now' button and by the scheduler.
+    """
+    from app.services.access_codes import issue_for_tour  # local import avoids a cycle
+
+    with Session(engine) as session:
+        req = session.get(TourRequest, request_id)
+        code = issue_for_tour(session, req)
+        if code is None:
+            raise NoCodeAvailable("No door codes are available for this property.")
+        session.commit()
+        where = _address(session.get(Property, req.property_id))
+        start = fmt_time(req.tour_start, req.time_zone)
+        sent = await _to_visitor(
+            session, req, "access_code", f"Your one-time access code for {where}",
+            [
+                f"Here is your one-time access code for your {start} tour of {where}:",
+                "This code works only once. Before you go:",
+                "Enjoy the tour!",
+            ],
+            f"Your one-time access code for {where} ({start} tour): {code.code}. It works once. "
+            f"Please remove your shoes inside, turn off all lights when leaving, and lock the door behind you.",
+            bullets=VISIT_RULES,
+            highlight=code.code,
+        )
+        if sent:
+            req.code_sent_at = datetime.now(timezone.utc)
+            session.add(req)
+            session.commit()
+        return code.code

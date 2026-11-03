@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { tourRequestAPI } from '../services/api';
 import { useAsync } from '../lib/useAsync';
+import { TOURS_CHANGED } from '../lib/tours';
 
 const primaryLinks = [
   { to: '/', label: 'Dashboard', end: true },
@@ -27,10 +28,15 @@ export const Navigation = () => {
   const menuRef = useRef<HTMLDivElement>(null);
   const { pathname } = useLocation();
   // Refresh the "needs review" count whenever the page changes.
-  const { data: pending } = useAsync(
+  const { data: pending, reload: reloadPending } = useAsync(
     () => tourRequestAPI.list({ status_filter: 'pending' }).catch(() => []),
     [pathname],
   );
+  // ...and right after a request is approved/declined on the current page.
+  useEffect(() => {
+    window.addEventListener(TOURS_CHANGED, reloadPending);
+    return () => window.removeEventListener(TOURS_CHANGED, reloadPending);
+  }, [reloadPending]);
 
   // Close the dropdown on any outside click.
   useEffect(() => {

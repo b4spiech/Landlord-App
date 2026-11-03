@@ -1,5 +1,8 @@
 import type { TourRequestStatus } from '../types';
 
+/** Window event fired after a tour request changes, so the nav badge refreshes. */
+export const TOURS_CHANGED = 'tour-requests-changed';
+
 export const tourStatusVariant = (s: TourRequestStatus) =>
   s === 'pending' ? 'yellow' : s === 'approved' ? 'green' : s === 'declined' ? 'red' : 'gray';
 

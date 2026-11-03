@@ -135,6 +135,10 @@ export const tourRequestAPI = {
   get: (id: string) => data<TourRequest>(api.get(`/tour-requests/${id}`)),
   notifications: (id: string) => data<NotificationEntry[]>(api.get(`/tour-requests/${id}/notifications`)),
   idPhotoUrl: (id: string) => `${API_URL}/tour-requests/${id}/id-photo`,
+  approve: (id: string, note?: string) => data<TourRequest>(api.post(`/tour-requests/${id}/approve`, { note })),
+  decline: (id: string, note?: string) => data<TourRequest>(api.post(`/tour-requests/${id}/decline`, { note })),
+  cancel: (id: string, note?: string) => data<TourRequest>(api.post(`/tour-requests/${id}/cancel`, { note })),
+  sendCode: (id: string) => data<TourRequest>(api.post(`/tour-requests/${id}/send-code`)),
 };
 
 export const tenantAPI = {

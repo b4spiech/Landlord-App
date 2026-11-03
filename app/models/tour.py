@@ -49,6 +49,8 @@ class TourRequest(TimestampMixin, table=True):
     # Landlord decision (Phase 4).
     decided_at: Optional[datetime] = Field(default=None, sa_type=DateTime(timezone=True))
     decision_note: Optional[str] = Field(default=None)
+    # When the door code was last sent (manually or by the scheduler).
+    code_sent_at: Optional[datetime] = Field(default=None, sa_type=DateTime(timezone=True))
 
     # Photo ID retention: deleted after this time (30 days after the tour).
     id_photo_delete_after: datetime = Field(sa_type=DateTime(timezone=True))

@@ -4,6 +4,7 @@ import { useAsync } from '../lib/useAsync';
 import { Card, ErrorState, PageHeader, Spinner } from '../components/ui';
 import { StatusBadge } from '../components/StatusBadge';
 import { formatPhone, tourStatusVariant } from '../lib/tours';
+import { TourDecisionPanel } from '../components/TourDecisionPanel';
 import { titleCase } from '../lib/format';
 
 const fmtDateTime = (iso?: string | null) =>
@@ -45,12 +46,7 @@ export const TourRequestDetail = () => {
         action={<StatusBadge status={r.status} variant={tourStatusVariant(r.status)} />}
       />
 
-      {r.status === 'pending' && (
-        <Card className="p-4 mb-6 bg-yellow-50 border-yellow-200 text-sm text-yellow-900">
-          Review the details and photo ID. Approve / decline buttons are coming in the next update —
-          for now, contact the visitor directly if needed.
-        </Card>
-      )}
+      <TourDecisionPanel request={r} onChanged={reload} />
 
       <div className="grid lg:grid-cols-2 gap-6 items-start">
         <div className="space-y-6">

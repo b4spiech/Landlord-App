@@ -470,6 +470,9 @@ export interface TourRequest {
   id_photo_delete_after: string;
   decided_at?: string | null;
   decision_note?: string | null;
+  access_code?: string | null;
+  access_code_status?: 'reserved' | 'issued' | null;
+  code_sent_at?: string | null;
 }
 
 export interface NotificationEntry {

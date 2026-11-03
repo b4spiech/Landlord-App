@@ -16,7 +16,18 @@ one PostgreSQL database serve two sites:
 - **Tour requests** (*Tours* in the nav, red badge = needs review): list
   filtered by status, detail page with the visitor's info, tour time in the
   property's zone *and* Michigan time, the photo ID, and a log of every
-  email/text sent. *Approve/decline arrives in the next phase.*
+  email/text sent.
+  - **Approve** (pending; refused if the tour has passed or no door code is
+    usable on that date): holds a code, tells the visitor they're approved and
+    that the one-time code arrives 30 minutes before the tour.
+  - **Decline** (pending): short polite message; the slot reopens.
+  - **Cancel** (approved): releases an unsent code back to the pool (a sent code
+    stays spent) and tells the visitor.
+  - **Send code now / Resend**: emails (and texts, with consent) the code plus
+    the visit rules — shoes off, all lights off when leaving, lock the door.
+    Resend reuses the same code. Until the scheduler phase, use this about 30
+    minutes before the tour.
+  - An optional note is included in approve/decline/cancel messages.
 
 **Public site** | `apexelementgrp.com`, `www.`, `tours.` | Prospective renters | Public; can reach only `/api/v1/public/*` |
 
@@ -57,7 +68,7 @@ one PostgreSQL database serve two sites:
 - `/privacy` and `/sms-terms` (used for Twilio toll-free verification).
 
 **Roadmap (tour requests):** ✅ submission + landlord alerts → ✅ door-code
-inventory per property → approve/decline → access code sent 30 min before the
+inventory per property → ✅ approve/decline (+ manual send code) → access code sent automatically 30 min before the
 tour → post-tour feedback → automatic photo-ID deletion 30 days after the tour
 (the deletion date is already recorded on each request). Notifications by email (Cloudflare Email
 Service) and SMS (Twilio).
@@ -142,7 +153,7 @@ Landlord APIs (require Cloudflare Access when enabled; 404 on public hosts):
 | Lease breaks | `/api/v1/lease-breaks` | workflow; `/webhook/docusign` (HMAC-verified, no Access JWT) |
 | Listings | `/api/v1/listings` | filters `property_id`, `status_filter`, `open_only`; `/publish`, `/unpublish`, `/close`, `/photos` |
 | Door codes | `/api/v1/properties/{id}/access-codes` | `GET` (counts + active codes; `?history=true` adds sent), `POST` bulk add; `DELETE /api/v1/access-codes/{id}` (available only) |
-| Tour requests | `/api/v1/tour-requests` | filters `status_filter`, `property_id`; `/{id}/id-photo` (no-store), `/{id}/notifications` |
+| Tour requests | `/api/v1/tour-requests` | filters `status_filter`, `property_id`; `/{id}/id-photo` (no-store), `/{id}/notifications`; `POST /{id}/approve`, `/decline`, `/cancel` (body `{note}`), `/send-code` |
 
 Public API (anonymous; only live listings and safe fields):
 
@@ -190,7 +201,8 @@ pytest -q        # needs DATABASE_URL pointing at a disposable Postgres database
 Covers host gatekeeping, Access JWT validation, DocuSign webhook signatures,
 the listing lifecycle and public visibility, lease ↔ property linking, and tour
 booking (slot rules, time zones, double-booking, spam limits, notifications),
-and the door-code lifecycle (reserve/release/issue, expiry, no reuse).
+the door-code lifecycle (reserve/release/issue, expiry, no reuse), and
+approve/decline/cancel/send-code with the exact visitor messages.
 
 ## Migrations
 
