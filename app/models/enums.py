@@ -159,7 +159,19 @@ class TourRequestStatus(str, Enum):
 ACTIVE_TOUR_STATUSES = (TourRequestStatus.pending.value, TourRequestStatus.approved.value)
 
 
+class AccessCodeKind(str, Enum):
+    one_time = "one_time"  # single-use tour codes (sent automatically)
+    tenant = "tenant"  # pre-programmed codes assigned to tenants
+    landlord = "landlord"  # the landlord's own codes
+
+
 class AccessCodeStatus(str, Enum):
-    available = "available"  # loaded, unused
-    reserved = "reserved"  # held for an approved tour, not yet sent
-    issued = "issued"  # sent to a visitor (one-time: never reused)
+    available = "available"  # one-time: unused · tenant: unassigned (in the pool)
+    reserved = "reserved"  # one-time: held for an approved tour, not yet sent
+    issued = "issued"  # one-time: sent to a visitor (never reused)
+    assigned = "assigned"  # tenant: given to a tenant
+    active = "active"  # landlord: in use
+
+
+# Statuses where a code is live on the lock (a code can't be loaded twice).
+LIVE_CODE_STATUSES = ("available", "reserved", "assigned", "active")

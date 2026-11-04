@@ -7,13 +7,23 @@ one PostgreSQL database serve two sites:
 |------|-----------|-----|------------|
 | **Landlord app** | `dev-app.apexelementgrp.com` | Owner/manager | Cloudflare Access login + JWT check in the backend |
 | - **Door codes** (property page → *Door codes*, collapsed to a one-line summary
-  until clicked; the low-stock warning always shows): paste one-time codes from the
-  lock's app (one per line or comma-separated; 3–20 digits/letters/`*`/`#`),
-  with an optional expiry date and note. Codes go **Available → Held** (reserved
-  for an approved tour) **→ Sent** (issued; never reused). Sent codes leave the
-  list but stay in a history with who received them and when. Low-stock warning
-  under 3 available. Only available codes can be removed. Reservation picks the
-  code expiring soonest that is still valid on the tour date.
+  until clicked; the tour-code low-stock warning always shows). Three kinds:
+  - **Tour codes (one-time):** paste one-time codes from the lock's app (one per
+    line or comma-separated; 3–20 digits/letters/`*`/`#`), optional expiry and
+    note. **Available → Held** (reserved for an approved tour) **→ Sent**
+    (never reused); sent codes move to a history with who received them.
+    Reservation picks the code expiring soonest that is still valid on the tour
+    date. Low-stock warning under 3 available.
+  - **Tenant codes:** pre-programmed codes in a per-property pool; assign one to
+    a tenant (people on the property's current lease are suggested first) and
+    set it back to *Not assigned* when they move out. Deleting a tenant returns
+    their codes to the pool.
+  - **Landlord codes:** your own codes with a label.
+
+  Tour automation only ever uses tour codes. Tenant and landlord codes are
+  masked (`••••`) until *Show codes*. A code can't be live twice on one
+  property across all kinds. Removal: unused tour codes; tenant codes once
+  unassigned; landlord codes anytime.
 - **Tour requests** (*Tours* in the nav, red badge = needs review): list
   filtered by status, detail page with the visitor's info, tour time in the
   property's zone *and* Michigan time, the photo ID, and a log of every
@@ -196,7 +206,7 @@ Landlord APIs (require Cloudflare Access when enabled; 404 on public hosts):
 | Leases | `/api/v1/leases` | filter `property_id`; nested `lease_tenants` on create; `property_id` must exist and can be changed, never cleared; document import |
 | Lease breaks | `/api/v1/lease-breaks` | `GET` list (filter `lease_id`); workflow; `/webhook/docusign` (HMAC-verified, no Access JWT) |
 | Listings | `/api/v1/listings` | filters `property_id`, `status_filter`, `open_only`; `/publish`, `/unpublish`, `/close`, `/photos` |
-| Door codes | `/api/v1/properties/{id}/access-codes` | `GET` (counts + active codes; `?history=true` adds sent), `POST` bulk add; `DELETE /api/v1/access-codes/{id}` (available only) |
+| Door codes | `/api/v1/properties/{id}/access-codes` | `GET` tour codes (counts + active; `?history=true` adds sent), `GET …/managed` (tenant + landlord codes and tenant suggestions), `POST` bulk add (`kind`: `one_time` / `tenant` / `landlord`); `POST /api/v1/access-codes/{id}/assign` `{tenant_id}` / `/unassign`; `DELETE /api/v1/access-codes/{id}` |
 | Deletes | `/api/v1/{kind}/{id}/delete-preview` (GET), `/api/v1/{kind}/{id}` (DELETE) for `properties`, `hoas`, `owners`, `management-companies`, `tenants`, `leases`, `lease-breaks` | preview lists blockers / also-deletes / unlinks; DELETE returns 409 if blocked |
 | Tour requests | `/api/v1/tour-requests` | filters `status_filter`, `property_id`; `/{id}/id-photo` (no-store), `/{id}/notifications`; `POST /{id}/approve`, `/decline`, `/cancel` (body `{note}`), `/send-code` |
 
