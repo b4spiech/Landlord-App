@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import io
 from datetime import date, datetime
+from pathlib import Path
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
@@ -22,6 +23,33 @@ from reportlab.platypus import (
     Table,
     TableStyle,
 )
+
+
+# APEX letterhead (logo from brand/, used as supplied).
+LOGO_PATH = Path(__file__).resolve().parents[2] / "brand" / "apex-logo-horizontal.png"
+LOGO_W = 1.8 * inch
+LOGO_H = LOGO_W * 818 / 2400  # keep the PNG's aspect ratio
+BRAND_BLUE = colors.HexColor("#2B7BE4")
+BRAND_NAVY = colors.HexColor("#0B2545")
+TOP_MARGIN = 1.35 * inch  # room for the letterhead
+
+
+def _letterhead(canvas, doc) -> None:
+    """Logo top-left with a thin brand rule beneath; company name in the footer."""
+    width, height = doc.pagesize
+    left, right = doc.leftMargin, width - doc.rightMargin
+    top = height - 0.45 * inch
+    canvas.saveState()
+    if LOGO_PATH.exists():
+        canvas.drawImage(str(LOGO_PATH), left, top - LOGO_H, width=LOGO_W, height=LOGO_H, mask="auto")
+    canvas.setStrokeColor(BRAND_BLUE)
+    canvas.setLineWidth(1)
+    canvas.line(left, top - LOGO_H - 0.1 * inch, right, top - LOGO_H - 0.1 * inch)
+    canvas.setFont("Helvetica", 8)
+    canvas.setFillColor(BRAND_NAVY)
+    canvas.drawString(left, 0.45 * inch, "APEX Element Group LLC  ·  apexelementgrp.com")
+    canvas.drawRightString(right, 0.45 * inch, f"Page {doc.page}")
+    canvas.restoreState()
 
 
 def _money(v: float | None) -> str:
@@ -59,7 +87,7 @@ def build_buyout_agreement_pdf(option, lease, prop, owner, tenants) -> bytes:
     ss = _styles()
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
-        buf, pagesize=letter, topMargin=0.8 * inch, bottomMargin=0.8 * inch,
+        buf, pagesize=letter, topMargin=TOP_MARGIN, bottomMargin=0.8 * inch,
         leftMargin=0.9 * inch, rightMargin=0.9 * inch,
         title="Early Lease Termination & Buyout Agreement",
     )
@@ -167,7 +195,7 @@ def build_buyout_agreement_pdf(option, lease, prop, owner, tenants) -> bytes:
     sg.setStyle(TableStyle([("FONTSIZE", (0, 0), (-1, -1), 10), ("TOPPADDING", (0, 0), (-1, -1), 14)]))
     el.append(sg)
 
-    doc.build(el)
+    doc.build(el, onFirstPage=_letterhead, onLaterPages=_letterhead)
     return buf.getvalue()
 
 
@@ -175,7 +203,7 @@ def build_moveout_statement_pdf(option, lease, prop, tenants, deductions=None) -
     ss = _styles()
     deductions = deductions or []
     buf = io.BytesIO()
-    doc = SimpleDocTemplate(buf, pagesize=letter, title="Move-out Statement")
+    doc = SimpleDocTemplate(buf, pagesize=letter, topMargin=TOP_MARGIN, title="Move-out Statement")
     tenant_names = ", ".join(f"{t.first_name} {t.last_name}" for t in tenants)
     held = option.security_deposit_held or 0
     total_ded = sum(float(d.get("amount", 0)) for d in deductions)
@@ -210,5 +238,5 @@ def build_moveout_statement_pdf(option, lease, prop, tenants, deductions=None) -
     el.append(Spacer(1, 24))
     el.append(Paragraph("Landlord: ____________________   Date: ___________", ss["BodyText"]))
 
-    doc.build(el)
+    doc.build(el, onFirstPage=_letterhead, onLaterPages=_letterhead)
     return buf.getvalue()

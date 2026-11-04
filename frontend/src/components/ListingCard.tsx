@@ -7,6 +7,7 @@ import { CHANNEL_LABELS, LISTING_STATUS_LABELS, formatCalendarDate, listingStatu
 import { Button, Card } from './ui';
 import { StatusBadge } from './StatusBadge';
 import { useToast } from './Toast';
+import { ShareListingButton } from './ShareListing';
 
 /** Property-page summary of the open listing, or a "List this property" action. */
 export const ListingCard = ({ propertyId }: { propertyId: string }) => {
@@ -96,9 +97,12 @@ export const ListingCard = ({ propertyId }: { propertyId: string }) => {
               </button>
             </div>
           )}
-          <Button variant="secondary" onClick={() => navigate(`/listings/${listing.id}`)}>
-            Manage listing
-          </Button>
+          <div className="flex flex-wrap gap-3">
+            <Button variant="secondary" onClick={() => navigate(`/listings/${listing.id}`)}>
+              Manage listing
+            </Button>
+            {listing.status === 'listed' && <ShareListingButton listingId={listing.id} />}
+          </div>
         </div>
       )}
     </Card>

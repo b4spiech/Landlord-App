@@ -65,6 +65,12 @@ one PostgreSQL database serve two sites:
   Facebook, Craigslist, …, with URL + date). Status: Draft → Listed → Closed
   (rented / withdrawn). One open listing per property. If a listing has no
   photos of its own, the public site uses the property's photo as the cover.
+- **Share link** (live listings — property page and listing editor): send the
+  home's public page to someone who asked about it (e.g. a phone inquiry) by
+  email and/or text, with an optional name and personal note. The email has a
+  **Request a tour** button (`/tour?home=<id>`). Only text people who asked for
+  the link; texts include STOP opt-out. Each send is
+  logged and shown as *Shared before* history.
 
 - **Deleting records** (properties, HOAs, owners, management companies,
   tenants, leases): a **Delete** button opens a warning that asks the server
@@ -127,6 +133,27 @@ inventory per property → ✅ approve/decline (+ manual send code) → ✅ acce
 tour → ✅ post-tour feedback → ✅ automatic photo-ID deletion 30 days after the tour. Notifications by email (Cloudflare Email
 Service) and SMS (Twilio).
 
+## Branding
+
+The brand kit lives in `brand/` (source files, as supplied) with usage notes in
+`brand/BRAND_INTEGRATION.md`.
+
+- **Colors** (Tailwind tokens): `apex-navy` #0B2545, `apex-deep` #1F4F8F,
+  `apex-blue` #2B7BE4, `apex-sky` #5FA2F5, `apex-mist` #B9D3F5. Tailwind's
+  `blue-400…800` are re-pointed at these so existing buttons and links use the
+  brand (`blue-600` = apex-deep, so white button text and link text meet 4.5:1
+  contrast; apex-blue is used for accents and focus rings).
+- **Font:** Montserrat 500/600/700, self-hosted via `@fontsource/montserrat`;
+  `font-brand` applied to headings. Body text keeps the system stack.
+- **Components:** `ApexMark` (inline SVG icon; `color`/`reversed`/`mono`) and
+  `ApexLogo` (horizontal/stacked image) in `frontend/src/components/brand/`.
+- **Where it's used:** favicons, apple-touch icon and `site.webmanifest`
+  (navy theme color); public-site header logo and footer mark; landlord top bar
+  mark + "APEX Property Management"; every outgoing email gets a logo header
+  (`EMAIL_LOGO_URL`, defaults to the production public site's
+  `/brand/apex-logo-horizontal.png`); PDF agreements get a letterhead (logo,
+  blue rule, company footer).
+
 ## Stack
 
 - **Backend:** FastAPI, SQLModel (SQLAlchemy 2.0), PostgreSQL (psycopg 3),
@@ -174,7 +201,9 @@ alembic/             Migrations
 frontend/src/
   App.tsx            Landlord app routes
   public/            Public site (PublicApp, pages, publicApi)
-  site.ts            Picks which site to render from the hostname
+  site.ts            Picks which site to render: the server injects
+                     <meta name="apex-site"> from PUBLIC_HOSTS (so staging's
+                     dev-tours. works); hostname list is only a fallback
 tests/               pytest suite
 ```
 
@@ -205,7 +234,7 @@ Landlord APIs (require Cloudflare Access when enabled; 404 on public hosts):
 | Tenants | `/api/v1/tenants` | |
 | Leases | `/api/v1/leases` | filter `property_id`; nested `lease_tenants` on create; `property_id` must exist and can be changed, never cleared; document import |
 | Lease breaks | `/api/v1/lease-breaks` | `GET` list (filter `lease_id`); workflow; `/webhook/docusign` (HMAC-verified, no Access JWT) |
-| Listings | `/api/v1/listings` | filters `property_id`, `status_filter`, `open_only`; `/publish`, `/unpublish`, `/close`, `/photos` |
+| Listings | `/api/v1/listings` | filters `property_id`, `status_filter`, `open_only`; `/publish`, `/unpublish`, `/close`, `/photos`; `POST /{id}/share` `{name, email, phone, note}`, `GET /{id}/shares` |
 | Door codes | `/api/v1/properties/{id}/access-codes` | `GET` tour codes (counts + active; `?history=true` adds sent), `GET …/managed` (tenant + landlord codes and tenant suggestions), `POST` bulk add (`kind`: `one_time` / `tenant` / `landlord`); `POST /api/v1/access-codes/{id}/assign` `{tenant_id}` / `/unassign`; `DELETE /api/v1/access-codes/{id}` |
 | Deletes | `/api/v1/{kind}/{id}/delete-preview` (GET), `/api/v1/{kind}/{id}` (DELETE) for `properties`, `hoas`, `owners`, `management-companies`, `tenants`, `leases`, `lease-breaks` | preview lists blockers / also-deletes / unlinks; DELETE returns 409 if blocked |
 | Tour requests | `/api/v1/tour-requests` | filters `status_filter`, `property_id`; `/{id}/id-photo` (no-store), `/{id}/notifications`; `POST /{id}/approve`, `/decline`, `/cancel` (body `{note}`), `/send-code` |

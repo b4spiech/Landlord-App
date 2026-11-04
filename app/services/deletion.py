@@ -117,6 +117,7 @@ def plan_property(session: Session, property_id: uuid.UUID) -> DeletePlan:
         if tour_ids:
             session.exec(sa_delete(TourRequest).where(TourRequest.id.in_(tour_ids)))
         if listing_ids:
+            session.exec(sa_delete(NotificationLog).where(NotificationLog.listing_id.in_(listing_ids)))
             session.exec(sa_delete(ListingPhoto).where(ListingPhoto.listing_id.in_(listing_ids)))
             session.exec(sa_delete(Listing).where(Listing.id.in_(listing_ids)))
         session.exec(sa_delete(PropertyPhoto).where(PropertyPhoto.property_id == property_id))
