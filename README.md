@@ -180,7 +180,9 @@ alembic/             Migrations
 frontend/src/
   App.tsx            Landlord app routes
   public/            Public site (PublicApp, pages, publicApi)
-  site.ts            Picks which site to render from the hostname
+  site.ts            Picks which site to render: the server injects
+                     <meta name="apex-site"> from PUBLIC_HOSTS (so staging's
+                     dev-tours. works); hostname list is only a fallback
 tests/               pytest suite
 ```
 

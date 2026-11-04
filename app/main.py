@@ -2,9 +2,9 @@ import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
@@ -26,7 +26,7 @@ from app.routers import (
     tenants,
     tour_requests,
 )
-from app.security import gatekeeper
+from app.security import gatekeeper, is_public_host
 from app.services.scheduler import scheduler_loop
 
 
@@ -107,8 +107,10 @@ if FRONTEND_DIST.exists():
         name="assets",
     )
 
+    INDEX_HTML = (FRONTEND_DIST / "index.html").read_text()
+
     @app.get("/{full_path:path}", include_in_schema=False)
-    def serve_spa(full_path: str):
+    def serve_spa(full_path: str, request: Request):
         # Unknown API routes should still return a JSON 404, not the SPA shell.
         if full_path.startswith("api/"):
             raise HTTPException(status_code=404, detail="Not Found")
@@ -117,7 +119,11 @@ if FRONTEND_DIST.exists():
         candidate = FRONTEND_DIST / full_path
         if full_path and candidate.is_file():
             return FileResponse(candidate)
-        return FileResponse(FRONTEND_DIST / "index.html")
+        # Tell the browser which site to render (public tour site vs landlord
+        # app) using the server's PUBLIC_HOSTS, so staging hostnames work too.
+        site = "public" if is_public_host(request) else "landlord"
+        page = INDEX_HTML.replace("<head>", f'<head>\n    <meta name="apex-site" content="{site}" />', 1)
+        return HTMLResponse(page, headers={"Cache-Control": "no-cache"})
 
     print(f"✓ React frontend mounted from {FRONTEND_DIST}")
 else:

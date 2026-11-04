@@ -1,6 +1,7 @@
 // Decide which app this browser tab is: the public tour site or the landlord app.
 //
-// Production: decided by hostname (apexelementgrp.com, www., tours. = public).
+// Deployed: the server says which, via <meta name="apex-site"> (it knows its
+// PUBLIC_HOSTS, including staging's dev-tours.). Fallback: the hostname list.
 // Local dev: add ?site=public (or ?site=landlord) to the URL to switch; the
 // choice sticks for the tab. The backend enforces the real boundary — this
 // only picks which UI to render.
@@ -11,6 +12,8 @@ const PUBLIC_HOSTS = (import.meta.env.VITE_PUBLIC_HOSTS || 'apexelementgrp.com,w
   .filter(Boolean);
 
 export function isPublicSite(): boolean {
+  const site = document.querySelector('meta[name="apex-site"]')?.getAttribute('content');
+  if (site) return site === 'public';
   if (PUBLIC_HOSTS.includes(window.location.hostname.toLowerCase())) return true;
   if (import.meta.env.DEV) {
     const param = new URLSearchParams(window.location.search).get('site');
