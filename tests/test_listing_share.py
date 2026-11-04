@@ -69,11 +69,11 @@ def test_email_share(env):
     assert "Hi Sam," in text and "Call me with questions." in text and "Request a tour" in html
 
 
-def test_text_requires_permission_and_both_channels(env):
+def test_text_and_both_channels(env):
     c, lid, sent = env
     r = _share(c, lid, phone="(616) 555-0142")
-    assert r.status_code == 422 and "asked you to text" in r.json()["detail"]
-    r = _share(c, lid, email="a@b.co", phone="6165550142", sms_permission=True).json()
+    assert r.status_code == 200 and r.json()[0]["channel"] == "sms"
+    r = _share(c, lid, email="a@b.co", phone="6165550142").json()
     assert [(x["channel"], x["status"]) for x in r] == [("email", "sent"), ("sms", "sent")]
     sms = next(m for m in sent if m[0] == "sms")
     assert sms[1] == "+16165550142" and f"/homes/{lid}" in sms[3] and "STOP" in sms[3]
@@ -86,7 +86,7 @@ def test_sms_failure_is_reported_email_still_sent(env, monkeypatch):
         raise RuntimeError("Twilio error 400: unverified number")
 
     monkeypatch.setattr(sms_service, "send_sms", broken)
-    r = _share(c, lid, email="a@b.co", phone="6165550142", sms_permission=True).json()
+    r = _share(c, lid, email="a@b.co", phone="6165550142").json()
     assert r[0]["status"] == "sent" and r[1]["status"] == "failed" and "unverified" in r[1]["detail"]
 
 
@@ -94,7 +94,7 @@ def test_validation_and_history(env):
     c, lid, sent = env
     assert _share(c, lid).status_code == 422
     assert _share(c, lid, email="nope").status_code == 422
-    assert _share(c, lid, phone="123", sms_permission=True).status_code == 422
+    assert _share(c, lid, phone="123").status_code == 422
     _share(c, lid, email="one@example.com")
     _share(c, lid, email="two@example.com")
     history = c.get(f"/api/v1/listings/{lid}/shares", headers=ADMIN).json()

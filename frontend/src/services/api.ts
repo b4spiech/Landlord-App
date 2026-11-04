@@ -122,7 +122,7 @@ export const listingAPI = {
   deletePhoto: (id: string, photoId: string) => api.delete(`/listings/${id}/photos/${photoId}`),
   share: (
     id: string,
-    body: { name?: string; email?: string; phone?: string; note?: string; sms_permission?: boolean },
+    body: { name?: string; email?: string; phone?: string; note?: string },
   ) => data<ShareResult[]>(api.post(`/listings/${id}/share`, body)),
   shares: (id: string) => data<ShareResult[]>(api.get(`/listings/${id}/shares`)),
 };

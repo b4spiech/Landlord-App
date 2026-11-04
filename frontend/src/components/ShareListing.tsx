@@ -36,7 +36,6 @@ const ShareDialog = ({ listingId, onClose }: { listingId: string; onClose: () =>
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [note, setNote] = useState('');
-  const [smsOk, setSmsOk] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [results, setResults] = useState<ShareResult[] | null>(null);
@@ -52,7 +51,6 @@ const ShareDialog = ({ listingId, onClose }: { listingId: string; onClose: () =>
           email: email || undefined,
           phone: phone || undefined,
           note: note || undefined,
-          sms_permission: smsOk,
         }),
       );
       reload();
@@ -74,7 +72,9 @@ const ShareDialog = ({ listingId, onClose }: { listingId: string; onClose: () =>
                   {r.channel === 'email' ? 'Email' : 'Text'} to {r.recipient}
                   {r.status !== 'sent' && r.detail && (
                     <span className="block text-xs text-gray-500">
-                      {r.channel === 'sms' ? 'Texts will work once Twilio approves your number. ' : ''}
+                      {r.channel === 'sms'
+                        ? 'Texts will work once Twilio approves your number. '
+                        : ''}
                       {r.detail}
                     </span>
                   )}
@@ -92,7 +92,6 @@ const ShareDialog = ({ listingId, onClose }: { listingId: string; onClose: () =>
                 setEmail('');
                 setPhone('');
                 setNote('');
-                setSmsOk(false);
               }}
             >
               Share with someone else
@@ -134,15 +133,9 @@ const ShareDialog = ({ listingId, onClose }: { listingId: string; onClose: () =>
             </Field>
           </div>
           {phone.trim() && (
-            <label className="flex items-start gap-2 text-sm text-gray-700">
-              <input
-                type="checkbox"
-                checked={smsOk}
-                onChange={(e) => setSmsOk(e.target.checked)}
-                className="mt-1"
-              />
-              <span>They asked me to text them this link.</span>
-            </label>
+            <p className="-mt-2 text-xs text-gray-500">
+              Only text people who asked for the link. The text includes “Reply STOP to opt out.”
+            </p>
           )}
           <Field label="Personal note (optional, email only)">
             <textarea
@@ -158,10 +151,7 @@ const ShareDialog = ({ listingId, onClose }: { listingId: string; onClose: () =>
             <Button variant="secondary" onClick={onClose}>
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={busy || (!email.trim() && !phone.trim()) || (!!phone.trim() && !smsOk)}
-            >
+            <Button type="submit" disabled={busy || (!email.trim() && !phone.trim())}>
               {busy ? 'Sending…' : 'Send link'}
             </Button>
           </div>

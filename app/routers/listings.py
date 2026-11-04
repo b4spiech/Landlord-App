@@ -277,8 +277,6 @@ class ShareIn(BaseModel):
     email: Optional[str] = Field(default=None, max_length=254)
     phone: Optional[str] = Field(default=None, max_length=30)
     note: Optional[str] = Field(default=None, max_length=500)
-    # Texts only go to people who asked for them (carrier/TCPA rules).
-    sms_permission: bool = False
 
 
 class ShareResult(BaseModel):
@@ -310,8 +308,6 @@ async def share(listing_id: uuid.UUID, payload: ShareIn, session: Session = Depe
         raise HTTPException(status_code=422, detail="Enter a valid US mobile number.")
     if not email and not phone:
         raise HTTPException(status_code=422, detail="Enter an email address and/or a mobile number.")
-    if phone and not payload.sms_permission:
-        raise HTTPException(status_code=422, detail="Confirm they asked you to text them the link.")
     prop = session.get(Property, listing.property_id)
     base = settings.PUBLIC_SITE_URL.rstrip("/")
     return await share_listing(
