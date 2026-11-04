@@ -39,6 +39,9 @@ class Settings(BaseSettings):
     SMTP_FROM: str = "noreply@apexelementgrp.com"
     SMTP_FROM_NAME: str = "APEX Element Group"  # display name shown in inboxes
     SMTP_REPLY_TO: str = ""  # defaults to SMTP_FROM
+    # Logo shown at the top of every email. Must be publicly reachable (the
+    # production public site serves it); set empty to show the name instead.
+    EMAIL_LOGO_URL: str = "https://apexelementgrp.com/brand/apex-logo-horizontal.png"
 
     # --- Landlord-app protection (Cloudflare Access) -----------------------
     # When enabled, every landlord API request must carry a valid Cloudflare

@@ -26,3 +26,14 @@ def test_headers(monkeypatch):
     assert msg["Date"] and msg["Message-ID"].endswith("@apexelementgrp.com>")
     assert msg["Reply-To"] == "tours@apexelementgrp.com"
     assert msg.get_body(("plain",)).get_content().strip() == "Hi"
+
+
+def test_html_has_brand_header(monkeypatch):
+    from app.services.email_service import branded_html
+
+    monkeypatch.setattr(settings, "EMAIL_LOGO_URL", "https://example.com/logo.png")
+    out = branded_html("<p>Body</p>")
+    assert 'src="https://example.com/logo.png"' in out and 'alt="APEX Element Group"' in out
+    assert out.index("logo.png") < out.index("<p>Body</p>")
+    monkeypatch.setattr(settings, "EMAIL_LOGO_URL", "")
+    assert "APEX Element Group</div>" in branded_html("<p>x</p>")

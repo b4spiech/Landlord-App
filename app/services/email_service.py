@@ -8,6 +8,7 @@ server is configured.
 
 from __future__ import annotations
 
+import html
 from email.message import EmailMessage
 from email.utils import formataddr, formatdate, make_msgid
 
@@ -64,6 +65,23 @@ def build_lease_break_email(option, prop, owner, tenants) -> tuple[str, str, lis
     return subject, html, to_emails
 
 
+def branded_html(body_html: str) -> str:
+    """Put the APEX letterhead (logo, or the name if no logo URL) above an email body."""
+    if settings.EMAIL_LOGO_URL:
+        header = (
+            f'<img src="{html.escape(settings.EMAIL_LOGO_URL)}" alt="APEX Element Group" width="180" '
+            'style="display:block;width:180px;max-width:60%;height:auto;border:0">'
+        )
+    else:
+        header = ('<div style="font-family:Montserrat,Arial,sans-serif;font-weight:700;font-size:20px;'
+                  'color:#0B2545">APEX Element Group</div>')
+    return (
+        '<div style="max-width:600px;margin:0 auto">'
+        f'<div style="padding:16px 0 12px;border-bottom:2px solid #2B7BE4;margin-bottom:16px">{header}</div>'
+        f"{body_html}</div>"
+    )
+
+
 async def send_email(
     to_emails: list[str],
     subject: str,
@@ -95,7 +113,7 @@ async def send_email(
     msg["Message-ID"] = make_msgid(domain=sender_domain)
     msg["Reply-To"] = settings.SMTP_REPLY_TO or settings.SMTP_FROM
     msg.set_content(text_body or "This message requires an HTML-capable email client.")
-    msg.add_alternative(html_body, subtype="html")
+    msg.add_alternative(branded_html(html_body), subtype="html")
     for name, content, mime in attachments or []:
         maintype, _, subtype = mime.partition("/")
         msg.add_attachment(content, maintype=maintype or "application", subtype=subtype or "octet-stream", filename=name)

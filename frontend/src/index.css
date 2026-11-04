@@ -4,6 +4,14 @@
 
 body {
   @apply bg-gray-50 text-gray-900;
+}
+
+/* Brand typography: Montserrat for headings; body text keeps the system stack. */
+h1, h2, h3 {
+  @apply font-brand;
+}
+
+body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 

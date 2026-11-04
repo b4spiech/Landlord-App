@@ -133,6 +133,27 @@ inventory per property → ✅ approve/decline (+ manual send code) → ✅ acce
 tour → ✅ post-tour feedback → ✅ automatic photo-ID deletion 30 days after the tour. Notifications by email (Cloudflare Email
 Service) and SMS (Twilio).
 
+## Branding
+
+The brand kit lives in `brand/` (source files, as supplied) with usage notes in
+`brand/BRAND_INTEGRATION.md`.
+
+- **Colors** (Tailwind tokens): `apex-navy` #0B2545, `apex-deep` #1F4F8F,
+  `apex-blue` #2B7BE4, `apex-sky` #5FA2F5, `apex-mist` #B9D3F5. Tailwind's
+  `blue-400…800` are re-pointed at these so existing buttons and links use the
+  brand (`blue-600` = apex-deep, so white button text and link text meet 4.5:1
+  contrast; apex-blue is used for accents and focus rings).
+- **Font:** Montserrat 500/600/700, self-hosted via `@fontsource/montserrat`;
+  `font-brand` applied to headings. Body text keeps the system stack.
+- **Components:** `ApexMark` (inline SVG icon; `color`/`reversed`/`mono`) and
+  `ApexLogo` (horizontal/stacked image) in `frontend/src/components/brand/`.
+- **Where it's used:** favicons, apple-touch icon and `site.webmanifest`
+  (navy theme color); public-site header logo and footer mark; landlord top bar
+  mark + "APEX Property Management"; every outgoing email gets a logo header
+  (`EMAIL_LOGO_URL`, defaults to the production public site's
+  `/brand/apex-logo-horizontal.png`); PDF agreements get a letterhead (logo,
+  blue rule, company footer).
+
 ## Stack
 
 - **Backend:** FastAPI, SQLModel (SQLAlchemy 2.0), PostgreSQL (psycopg 3),
