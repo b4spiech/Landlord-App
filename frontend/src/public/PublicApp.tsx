@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter, Link, Route, Routes, useLocation } from 'react-router-dom';
 
 import { COMPANY } from './company';
+import { ApexLogo, ApexMark } from '../components/brand';
 import { HomePage } from './pages/HomePage';
 import { ListingPage } from './pages/ListingPage';
 import { FeedbackPage } from './pages/FeedbackPage';
@@ -51,8 +52,8 @@ export default function PublicApp() {
       <div className="min-h-screen flex flex-col bg-white">
         <header className="border-b">
           <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
-            <Link to="/" className="text-lg font-bold text-gray-900">
-              {COMPANY.shortName}
+            <Link to="/" aria-label={`${COMPANY.shortName} home`}>
+              <ApexLogo className="h-11 w-auto" />
             </Link>
             <HeaderTourLink />
           </div>
@@ -72,7 +73,8 @@ export default function PublicApp() {
 
         <footer className="border-t text-sm text-gray-500">
           <div className="max-w-3xl mx-auto px-4 py-6 flex flex-wrap gap-x-6 gap-y-2 justify-between">
-            <span>
+            <span className="flex items-center gap-2">
+              <ApexMark size={16} decorative />
               &copy; {new Date().getFullYear()} {COMPANY.legalName}
             </span>
             <nav className="flex gap-4">

@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { tourRequestAPI } from '../services/api';
 import { useAsync } from '../lib/useAsync';
 import { TOURS_CHANGED } from '../lib/tours';
+import { ApexMark } from './brand';
 
 const primaryLinks = [
   { to: '/', label: 'Dashboard', end: true },
@@ -51,8 +52,11 @@ export const Navigation = () => {
   return (
     <nav className="bg-white shadow sticky top-0 z-20">
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between flex-wrap gap-2">
-        <NavLink to="/" className="text-xl font-bold text-blue-600">
-          APEX Property Management
+        <NavLink to="/" className="flex items-center gap-2.5" aria-label="APEX Property Management home">
+          <ApexMark size={30} decorative />
+          <span className="font-brand text-lg font-bold text-apex-navy leading-tight">
+            APEX <span className="font-semibold text-apex-deep">Property Management</span>
+          </span>
         </NavLink>
         <div className="flex items-center gap-1 sm:gap-2">
           {primaryLinks.map((l) => (

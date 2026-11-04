@@ -1,5 +1,8 @@
 import { StrictMode, Suspense, lazy } from 'react'
 import { createRoot } from 'react-dom/client'
+import '@fontsource/montserrat/500.css'
+import '@fontsource/montserrat/600.css'
+import '@fontsource/montserrat/700.css'
 import './index.css'
 import { ToastProvider } from './components/Toast.tsx'
 import { isPublicSite } from './site.ts'
