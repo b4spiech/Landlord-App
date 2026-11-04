@@ -65,6 +65,12 @@ one PostgreSQL database serve two sites:
   Facebook, Craigslist, …, with URL + date). Status: Draft → Listed → Closed
   (rented / withdrawn). One open listing per property. If a listing has no
   photos of its own, the public site uses the property's photo as the cover.
+- **Share link** (live listings — property page and listing editor): send the
+  home's public page to someone who asked about it (e.g. a phone inquiry) by
+  email and/or text, with an optional name and personal note. The email has a
+  **Request a tour** button (`/tour?home=<id>`). Texts require ticking "They
+  asked me to text them this link" and include STOP opt-out. Each send is
+  logged and shown as *Shared before* history.
 
 - **Deleting records** (properties, HOAs, owners, management companies,
   tenants, leases): a **Delete** button opens a warning that asks the server
@@ -205,7 +211,7 @@ Landlord APIs (require Cloudflare Access when enabled; 404 on public hosts):
 | Tenants | `/api/v1/tenants` | |
 | Leases | `/api/v1/leases` | filter `property_id`; nested `lease_tenants` on create; `property_id` must exist and can be changed, never cleared; document import |
 | Lease breaks | `/api/v1/lease-breaks` | `GET` list (filter `lease_id`); workflow; `/webhook/docusign` (HMAC-verified, no Access JWT) |
-| Listings | `/api/v1/listings` | filters `property_id`, `status_filter`, `open_only`; `/publish`, `/unpublish`, `/close`, `/photos` |
+| Listings | `/api/v1/listings` | filters `property_id`, `status_filter`, `open_only`; `/publish`, `/unpublish`, `/close`, `/photos`; `POST /{id}/share` `{name, email, phone, note, sms_permission}`, `GET /{id}/shares` |
 | Door codes | `/api/v1/properties/{id}/access-codes` | `GET` tour codes (counts + active; `?history=true` adds sent), `GET …/managed` (tenant + landlord codes and tenant suggestions), `POST` bulk add (`kind`: `one_time` / `tenant` / `landlord`); `POST /api/v1/access-codes/{id}/assign` `{tenant_id}` / `/unassign`; `DELETE /api/v1/access-codes/{id}` |
 | Deletes | `/api/v1/{kind}/{id}/delete-preview` (GET), `/api/v1/{kind}/{id}` (DELETE) for `properties`, `hoas`, `owners`, `management-companies`, `tenants`, `leases`, `lease-breaks` | preview lists blockers / also-deletes / unlinks; DELETE returns 409 if blocked |
 | Tour requests | `/api/v1/tour-requests` | filters `status_filter`, `property_id`; `/{id}/id-photo` (no-store), `/{id}/notifications`; `POST /{id}/approve`, `/decline`, `/cancel` (body `{note}`), `/send-code` |

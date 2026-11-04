@@ -120,7 +120,20 @@ export const listingAPI = {
   reorderPhotos: (id: string, photoIds: string[]) =>
     data<ListingPhoto[]>(api.put(`/listings/${id}/photos/order`, { photo_ids: photoIds })),
   deletePhoto: (id: string, photoId: string) => api.delete(`/listings/${id}/photos/${photoId}`),
+  share: (
+    id: string,
+    body: { name?: string; email?: string; phone?: string; note?: string; sms_permission?: boolean },
+  ) => data<ShareResult[]>(api.post(`/listings/${id}/share`, body)),
+  shares: (id: string) => data<ShareResult[]>(api.get(`/listings/${id}/shares`)),
 };
+
+export interface ShareResult {
+  created_at?: string;
+  channel: 'email' | 'sms';
+  recipient: string;
+  status: 'sent' | 'failed' | 'skipped';
+  detail?: string | null;
+}
 
 export const accessCodeAPI = {
   list: (propertyId: string, history = false) =>

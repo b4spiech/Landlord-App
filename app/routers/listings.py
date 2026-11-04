@@ -1,19 +1,24 @@
 """Landlord-side listing management: list a property, edit details, photos, close."""
 
 import uuid
+from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
+from pydantic import BaseModel, Field
 from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.config import settings
 from app.database import get_session
-from app.models import Listing, ListingPhoto, Property
+from app.models import Listing, ListingPhoto, NotificationLog, Property
 from app.models.base import utcnow
 from app.models.enums import ListingStatus
 from app.models.listing import OPEN_LISTING_STATUSES
 from app.routers.crud import get_or_404
+from app.services.listing_share import share_listing
+from app.services.sms_service import normalize_us_phone
+from app.services.visitor_auth import normalize_email
 from app.schemas.listing import (
     ListingClose,
     ListingCreate,
@@ -262,3 +267,66 @@ def delete_photo(listing_id: uuid.UUID, photo_id: uuid.UUID, session: Session = 
     session.delete(photo)
     session.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# --- Share a listing link ----------------------------------------------------------
+
+
+class ShareIn(BaseModel):
+    name: Optional[str] = Field(default=None, max_length=100)
+    email: Optional[str] = Field(default=None, max_length=254)
+    phone: Optional[str] = Field(default=None, max_length=30)
+    note: Optional[str] = Field(default=None, max_length=500)
+    # Texts only go to people who asked for them (carrier/TCPA rules).
+    sms_permission: bool = False
+
+
+class ShareResult(BaseModel):
+    channel: str
+    recipient: str
+    status: str
+    detail: Optional[str] = None
+
+
+class ShareHistory(BaseModel):
+    created_at: datetime
+    channel: str
+    recipient: str
+    status: str
+    detail: Optional[str] = None
+
+
+@router.post("/{listing_id}/share", response_model=list[ShareResult])
+async def share(listing_id: uuid.UUID, payload: ShareIn, session: Session = Depends(get_session)):
+    """Email and/or text the public listing link to someone who asked about the home."""
+    listing = get_or_404(session, Listing, listing_id, "Listing")
+    if listing.status != ListingStatus.listed.value:
+        raise HTTPException(status_code=409, detail="Publish the listing first — only live listings can be shared.")
+    email = normalize_email(payload.email) if (payload.email or "").strip() else None
+    if (payload.email or "").strip() and not email:
+        raise HTTPException(status_code=422, detail="That email address doesn't look right.")
+    phone = normalize_us_phone(payload.phone) if (payload.phone or "").strip() else None
+    if (payload.phone or "").strip() and not phone:
+        raise HTTPException(status_code=422, detail="Enter a valid US mobile number.")
+    if not email and not phone:
+        raise HTTPException(status_code=422, detail="Enter an email address and/or a mobile number.")
+    if phone and not payload.sms_permission:
+        raise HTTPException(status_code=422, detail="Confirm they asked you to text them the link.")
+    prop = session.get(Property, listing.property_id)
+    base = settings.PUBLIC_SITE_URL.rstrip("/")
+    return await share_listing(
+        session, listing, prop,
+        listing_url=public_listing_url(listing.id), tour_url=f"{base}/tour?home={listing.id}",
+        name=(payload.name or "").strip() or None, email=email, phone=phone,
+        note=(payload.note or "").strip() or None,
+    )
+
+
+@router.get("/{listing_id}/shares", response_model=list[ShareHistory])
+def share_history(listing_id: uuid.UUID, session: Session = Depends(get_session)):
+    get_or_404(session, Listing, listing_id, "Listing")
+    return session.exec(
+        select(NotificationLog)
+        .where(NotificationLog.listing_id == listing_id, NotificationLog.kind == "listing_share")
+        .order_by(NotificationLog.created_at.desc())
+    ).all()

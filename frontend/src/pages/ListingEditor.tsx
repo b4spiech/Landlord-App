@@ -17,6 +17,7 @@ import { Field, NumberInput, Select, Textarea, TextInput } from '../components/F
 import { StatusBadge } from '../components/StatusBadge';
 import { Modal } from '../components/Modal';
 import { useToast } from '../components/Toast';
+import { ShareListingButton } from '../components/ShareListing';
 import {
   CHANNEL_LABELS,
   LISTING_STATUS_LABELS,
@@ -202,12 +203,15 @@ const ListingEditorForm = ({
               {listing.public_url}
             </a>
           </div>
-          <Button
-            variant="secondary"
-            onClick={() => navigator.clipboard.writeText(listing.public_url!).then(() => toast.success('Link copied'))}
-          >
-            Copy link
-          </Button>
+          <div className="flex gap-3">
+            <Button
+              variant="secondary"
+              onClick={() => navigator.clipboard.writeText(listing.public_url!).then(() => toast.success('Link copied'))}
+            >
+              Copy link
+            </Button>
+            <ShareListingButton listingId={listing.id} />
+          </div>
         </Card>
       )}
 

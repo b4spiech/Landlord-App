@@ -83,6 +83,8 @@ class NotificationLog(TimestampMixin, table=True):
     __tablename__ = "notification_log"
 
     tour_request_id: Optional[uuid.UUID] = Field(default=None, foreign_key="tour_request.id", index=True)
+    # Set for messages about a listing that aren't tied to a tour (e.g. "share link").
+    listing_id: Optional[uuid.UUID] = Field(default=None, foreign_key="listing.id", index=True)
     channel: str = Field(max_length=10)  # email | sms
     audience: str = Field(max_length=20)  # landlord | visitor
     kind: str = Field(max_length=50)  # e.g. tour_request_received
