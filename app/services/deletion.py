@@ -174,7 +174,15 @@ def plan_tenant(session: Session, tenant_id: uuid.UUID) -> DeletePlan:
     plan = DeletePlan("tenant", f"{tenant.first_name} {tenant.last_name}")
     if n := _count(session, LeaseTenant, LeaseTenant.tenant_id == tenant_id):
         plan.blockers.append(f"they are on {_n(n, 'lease')} (remove them from the lease or delete it first)")
-    plan._steps.append(lambda: session.delete(tenant))
+    if n := _count(session, AccessCode, AccessCode.tenant_id == tenant_id):
+        plan.unlinks.append(f"{_n(n, 'door code')} assigned to them will go back to the property's tenant-code pool")
+
+    def run():
+        session.exec(sa_update(AccessCode).where(AccessCode.tenant_id == tenant_id)
+                     .values(tenant_id=None, assigned_at=None, status="available"))
+        session.delete(tenant)
+
+    plan._steps.append(run)
     return plan
 
 

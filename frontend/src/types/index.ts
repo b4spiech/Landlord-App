@@ -500,12 +500,14 @@ export interface NotificationEntry {
 
 // --- Door codes ------------------------------------------------------------
 
-export type AccessCodeStatus = 'available' | 'reserved' | 'issued';
+export type AccessCodeKind = 'one_time' | 'tenant' | 'landlord';
+export type AccessCodeStatus = 'available' | 'reserved' | 'issued' | 'assigned' | 'active';
 
 export interface AccessCode {
   id: string;
   created_at: string;
   code: string;
+  kind: AccessCodeKind;
   status: AccessCodeStatus;
   note?: string | null;
   expires_on?: string | null;
@@ -513,6 +515,15 @@ export interface AccessCode {
   tour_visitor?: string | null;
   reserved_at?: string | null;
   issued_at?: string | null;
+  tenant_id?: string | null;
+  tenant_name?: string | null;
+  assigned_at?: string | null;
+}
+
+export interface ManagedCodes {
+  tenant_codes: AccessCode[];
+  landlord_codes: AccessCode[];
+  tenants: { id: string; name: string; on_current_lease: boolean }[];
 }
 
 export interface AccessCodeList {

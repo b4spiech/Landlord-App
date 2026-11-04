@@ -155,3 +155,91 @@ def test_codes_never_reachable_from_public_site(env):
     c, pid = env
     assert c.get(_url(pid), headers=PUBLIC).status_code == 404
     assert c.post(_url(pid), json={"codes": "1234"}, headers=PUBLIC).status_code == 404
+
+
+# --- Tenant and landlord codes ----------------------------------------------------
+
+
+def _managed(c, pid):
+    return c.get(f"{_url(pid)}/managed", headers=ADMIN).json()
+
+
+def test_landlord_and_tenant_codes_never_used_for_tours(env):
+    c, pid = env
+    assert c.post(_url(pid), json={"codes": "9999", "kind": "landlord", "note": "Owner"}, headers=ADMIN).json()["added"] == 1
+    assert c.post(_url(pid), json={"codes": "1111 2222", "kind": "tenant"}, headers=ADMIN).json()["added"] == 2
+    one_time = c.get(_url(pid), headers=ADMIN).json()
+    assert one_time["available"] == 0 and one_time["codes"] == []  # tour pool untouched
+    with Session(engine) as s:
+        req = _tour(s, pid)
+        assert reserve_for_tour(s, req) is None and issue_for_tour(s, req) is None
+    m = _managed(c, pid)
+    assert [x["code"] for x in m["landlord_codes"]] == ["9999"] and m["landlord_codes"][0]["status"] == "active"
+    assert {x["code"] for x in m["tenant_codes"]} == {"1111", "2222"}
+    assert all(x["status"] == "available" for x in m["tenant_codes"])
+
+
+def test_a_code_cannot_be_live_twice_across_kinds(env):
+    c, pid = env
+    c.post(_url(pid), json={"codes": "4242", "kind": "landlord"}, headers=ADMIN)
+    r = c.post(_url(pid), json={"codes": "4242 5353", "kind": "tenant"}, headers=ADMIN).json()
+    assert r["added"] == 1 and r["duplicates"] == ["4242"]
+    assert c.post(_url(pid), json={"codes": "5353"}, headers=ADMIN).json()["duplicates"] == ["5353"]
+
+
+def test_assign_unassign_and_delete_rules(env):
+    from datetime import date as _date
+
+    from app.models import Lease, LeaseTenant, Tenant
+
+    c, pid = env
+    c.post(_url(pid), json={"codes": "7777", "kind": "tenant"}, headers=ADMIN)
+    c.post(_url(pid), json={"codes": "8888", "kind": "landlord"}, headers=ADMIN)
+    with Session(engine) as s:
+        current = Tenant(first_name="Cora", last_name="Current")
+        other = Tenant(first_name="Abe", last_name="Other")
+        lease = Lease(property_id=pid, start_date=_date(2026, 1, 1), end_date=_date(2026, 12, 31), monthly_rent=1,
+                      status="active")
+        s.add_all([current, other, lease])
+        s.flush()
+        s.add(LeaseTenant(lease_id=lease.id, tenant_id=current.id, is_primary=True))
+        s.commit()
+        cur_id, other_id, lease_id = current.id, other.id, lease.id
+    try:
+        m = _managed(c, pid)
+        # People on this property's current lease are suggested first.
+        assert m["tenants"][0]["name"] == "Cora Current" and m["tenants"][0]["on_current_lease"]
+        code_id = m["tenant_codes"][0]["id"]
+        r = c.post(f"/api/v1/access-codes/{code_id}/assign", json={"tenant_id": str(cur_id)}, headers=ADMIN).json()
+        assert r["status"] == "assigned" and r["tenant_name"] == "Cora Current" and r["assigned_at"]
+        assert c.delete(f"/api/v1/access-codes/{code_id}", headers=ADMIN).status_code == 409  # unassign first
+        # Landlord codes can't be assigned; they can always be removed.
+        landlord_id = m["landlord_codes"][0]["id"]
+        assert c.post(f"/api/v1/access-codes/{landlord_id}/assign", json={"tenant_id": str(cur_id)},
+                      headers=ADMIN).status_code == 409
+        assert c.delete(f"/api/v1/access-codes/{landlord_id}", headers=ADMIN).status_code == 204
+        # Reassign directly, then unassign back to the pool.
+        assert c.post(f"/api/v1/access-codes/{code_id}/assign", json={"tenant_id": str(other_id)},
+                      headers=ADMIN).json()["tenant_name"] == "Abe Other"
+        r = c.post(f"/api/v1/access-codes/{code_id}/unassign", headers=ADMIN).json()
+        assert r["status"] == "available" and r["tenant_id"] is None
+        # Deleting a tenant puts their codes back in the pool.
+        c.post(f"/api/v1/access-codes/{code_id}/assign", json={"tenant_id": str(other_id)}, headers=ADMIN)
+        plan = c.get(f"/api/v1/tenants/{other_id}/delete-preview", headers=ADMIN).json()
+        assert "1 door code" in plan["unlinks"][0]
+        assert c.delete(f"/api/v1/tenants/{other_id}", headers=ADMIN).status_code == 204
+        assert _managed(c, pid)["tenant_codes"][0]["status"] == "available"
+    finally:
+        with Session(engine) as s:
+            for row in s.exec(select(LeaseTenant).where(LeaseTenant.lease_id == lease_id)).all():
+                s.delete(row)
+            s.flush()
+            s.delete(s.get(Lease, lease_id))
+            for tid in (cur_id, other_id):
+                t = s.get(Tenant, tid)
+                if t:
+                    for code in s.exec(select(AccessCode).where(AccessCode.tenant_id == tid)).all():
+                        code.tenant_id = None
+                    s.flush()
+                    s.delete(t)
+            s.commit()

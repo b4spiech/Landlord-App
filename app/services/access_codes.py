@@ -12,14 +12,15 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import func, nulls_last
 from sqlmodel import Session, select
 
-from app.models import AccessCode, TourRequest
-from app.models.enums import AccessCodeStatus
+from app.models import AccessCode, Tenant, TourRequest
+from app.models.enums import AccessCodeKind, AccessCodeStatus
 
 # Keypad-friendly: digits, letters, * and #, 3-20 characters.
 CODE_RE = re.compile(r"^[0-9A-Za-z*#]{3,20}$")
 LOW_STOCK = 3  # warn when a property has fewer available codes than this
 
 A, R, I = AccessCodeStatus.available.value, AccessCodeStatus.reserved.value, AccessCodeStatus.issued.value
+ONE_TIME = AccessCodeKind.one_time.value
 
 
 def parse_codes(raw: str) -> tuple[list[str], list[str]]:
@@ -40,7 +41,7 @@ def parse_codes(raw: str) -> tuple[list[str], list[str]]:
 def counts(session: Session, property_id: uuid.UUID) -> dict[str, int]:
     rows = session.exec(
         select(AccessCode.status, func.count())
-        .where(AccessCode.property_id == property_id)
+        .where(AccessCode.property_id == property_id, AccessCode.kind == ONE_TIME)
         .group_by(AccessCode.status)
     ).all()
     out = {A: 0, R: 0, I: 0}
@@ -69,6 +70,7 @@ def reserve_for_tour(session: Session, req: TourRequest) -> AccessCode | None:
         select(AccessCode)
         .where(
             AccessCode.property_id == req.property_id,
+            AccessCode.kind == ONE_TIME,  # never hand out tenant or landlord codes
             AccessCode.status == A,
             (AccessCode.expires_on.is_(None)) | (AccessCode.expires_on >= tour_day),
         )
@@ -110,3 +112,22 @@ def issue_for_tour(session: Session, req: TourRequest) -> AccessCode | None:
         code.issued_at = datetime.now(timezone.utc)
         session.add(code)
     return code
+
+
+# --- Tenant codes ---------------------------------------------------------------
+
+
+def assign_to_tenant(session: Session, code: AccessCode, tenant: Tenant) -> None:
+    """Give a pre-programmed tenant code to a tenant. Caller commits."""
+    code.status = AccessCodeStatus.assigned.value
+    code.tenant_id = tenant.id
+    code.assigned_at = datetime.now(timezone.utc)
+    session.add(code)
+
+
+def unassign(session: Session, code: AccessCode) -> None:
+    """Put a tenant code back in the property's pool. Caller commits."""
+    code.status = A
+    code.tenant_id = None
+    code.assigned_at = None
+    session.add(code)

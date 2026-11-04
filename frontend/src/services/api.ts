@@ -1,7 +1,10 @@
 import axios from 'axios';
 import type { AxiosResponse } from 'axios';
 import type {
+  AccessCode,
+  AccessCodeKind,
   AccessCodeList,
+  ManagedCodes,
   CreateLeaseResult,
   EmailApproval,
   HOA,
@@ -122,7 +125,14 @@ export const listingAPI = {
 export const accessCodeAPI = {
   list: (propertyId: string, history = false) =>
     data<AccessCodeList>(api.get(`/properties/${propertyId}/access-codes`, { params: { history } })),
-  add: (propertyId: string, body: { codes: string; expires_on?: string | null; note?: string | null }) =>
+  managed: (propertyId: string) => data<ManagedCodes>(api.get(`/properties/${propertyId}/access-codes/managed`)),
+  assign: (codeId: string, tenantId: string) =>
+    data<AccessCode>(api.post(`/access-codes/${codeId}/assign`, { tenant_id: tenantId })),
+  unassign: (codeId: string) => data<AccessCode>(api.post(`/access-codes/${codeId}/unassign`)),
+  add: (
+    propertyId: string,
+    body: { codes: string; kind?: AccessCodeKind; expires_on?: string | null; note?: string | null },
+  ) =>
     data<{ added: number; duplicates: string[]; invalid: string[] }>(
       api.post(`/properties/${propertyId}/access-codes`, body),
     ),
